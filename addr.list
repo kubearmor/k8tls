@@ -1,0 +1,12 @@
+google.com:443
+accuknox.com:443
+expired.badssl.com:443
+wrong.host.badssl.com:443
+self-signed.badssl.com:443
+untrusted-root.badssl.com:443
+revoked.badssl.com:443
+pinning-test.badssl.com:443
+dh480.badssl.com:443
+isunknownaddress.com:12345
+localhost:1234
+localhost:22
