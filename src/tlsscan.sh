@@ -12,6 +12,7 @@ chk_cmd()
 prerequisites()
 {
 	chk_cmd openssl "Install OpenSSL"
+	chk_cmd csvlook "apt install csvkit"
 }
 
 usage()
@@ -37,13 +38,15 @@ parse_cmdargs()
 		case "$1" in
 			-f | --infile ) infile="$2"; [[ ! -f $infile ]] && echo "$infile file not found" && exit 2; shift 2;;
 			--json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
-			--csv ) csvout="$2"; [[ -f $csvout ]] && rm -f $csvout; shift 2;;
+			--csv ) csvout="$2"; shift 2;;
 			-h | --help ) usage; shift 1;;
 			-- ) shift; break ;;
 			* ) break ;;
 		esac
 	done
 	[[ "$infile" == "" ]] && echo "No address list provided, use --infile <file>" && exit 2
+	[[ "$csvout" == "" ]] && csvout="/tmp/out.csv"
+	[[ -f $csvout ]] && rm -f $csvout
 }
 
 jsonreport()
@@ -129,6 +132,7 @@ main()
 		scantls "${line/ */}" "${line/* /}"
 	done < $infile
 	jsontrailer
+	[[ -f "$csvout" ]] && csvlook $csvout
 }
 
 # Processing starts here
