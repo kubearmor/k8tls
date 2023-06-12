@@ -31,3 +31,10 @@ checking [localhost:22 namespace:deployment/wordpress]...
 | localhost:1234                 | localhost:1234                | CONNFAIL |         |                             |        |           |                                              |
 | namespace:deployment/wordpress | localhost:22                  | CONNFAIL |         |                             |        |           |                                              |
 ```
+
+## Docker Run
+
+```
+docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.list --csv data/out.csv
+```
+> Note: The command assumes that the current folder contains `addr.list` file containing the list of addresses to scan.
