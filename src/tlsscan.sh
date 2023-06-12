@@ -21,7 +21,8 @@ Usage: $0 <options>
 
 Options:
 -f | --infile input file containing list of addresses (mandatory)
--j | --json output json file
+--json output json file
+--csv output csv file
 -h | --help
 EOF
 	exit 1
@@ -29,13 +30,14 @@ EOF
 
 parse_cmdargs()
 {
-	OPTS=`getopt -o f:j:h --long infile:,json:,help -n 'parse-options' -- "$@"`
+	OPTS=`getopt -o f:h --long csv:,infile:,json:,help -n 'parse-options' -- "$@"`
 	[[ $? -ne 0 ]] && usage
 	eval set -- "$OPTS"
 	while true; do
 		case "$1" in
 			-f | --infile ) infile="$2"; [[ ! -f $infile ]] && echo "$infile file not found" && exit 2; shift 2;;
-			-j | --json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
+			--json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
+			--csv ) csvout="$2"; [[ -f $csvout ]] && rm -f $csvout; shift 2;;
 			-h | --help ) usage; shift 1;;
 			-- ) shift; break ;;
 			* ) break ;;
@@ -73,6 +75,16 @@ jsontrailer()
 	echo -en "\n\t}\n]" >> $jsonout
 }
 
+csvreport()
+{
+	[[ "$csvout" == "" ]] && return
+	if [ ! -f "$csvout" ]; then
+		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification" > $csvout
+	fi
+	cat << EOF >> $csvout
+"$TLS_Name","$TLS_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification"
+EOF
+}
 
 scantls()
 {
@@ -106,6 +118,7 @@ scantls()
 	done < $tmp
 	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
 	jsonreport
+	csvreport
 }
 
 main()
