@@ -54,6 +54,7 @@ jsonreport()
 	fi
 	cat << EOF >> $jsonout
 	{
+		"Name": "$TLS_Name",
 		"Address": "$TLS_Address",
 		"Status": "$TLS_Status",
 		"Protocol_version": "$TLS_Protocol_version",
@@ -87,6 +88,7 @@ scantls()
 #	echo "ret=$ret"
 #	cat $tmp
 	TLS_Address="$1"
+	TLS_Name="$2"
 	case "$ret" in
 		0 ) TLS_Status="TLS";;
 		124 ) TLS_Status="NO_TLS";;
@@ -111,7 +113,7 @@ main()
 	while read line; do
 		[[ $line == \#* ]] && continue
 		echo "checking [$line]..."
-		scantls $line
+		scantls "${line/ */}" "${line/* /}"
 	done < $infile
 	jsontrailer
 }

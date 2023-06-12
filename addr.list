@@ -1,12 +1,12 @@
-google.com:443
-accuknox.com:443
-expired.badssl.com:443
-wrong.host.badssl.com:443
-self-signed.badssl.com:443
-untrusted-root.badssl.com:443
-revoked.badssl.com:443
-pinning-test.badssl.com:443
-dh480.badssl.com:443
-isunknownaddress.com:12345
+google.com:443 Google
+accuknox.com:443 Accuknox
+expired.badssl.com:443 BadSSL
+wrong.host.badssl.com:443 BadSSL
+self-signed.badssl.com:443 BadSSL
+untrusted-root.badssl.com:443 BadSSL
+revoked.badssl.com:443 BadSSL
+pinning-test.badssl.com:443 BadSSL
+dh480.badssl.com:443 BadSSL
+isunknownaddress.com:12345 LocalTest
 localhost:1234
-localhost:22
+localhost:22 namespace:deployment/wordpress
