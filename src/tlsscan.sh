@@ -98,7 +98,7 @@ scantls()
 
 	tmp=/tmp/tls.out
 	rm -f $tmp 2>/dev/null
-	timeout 3s openssl s_client -connect "$1" -brief < /dev/null 2>$tmp
+	timeout 3s openssl s_client -CApath /etc/ssl/certs/ -connect "$1" -brief < /dev/null 2>$tmp
 	ret=$?
 #	echo "ret=$ret"
 #	cat $tmp
