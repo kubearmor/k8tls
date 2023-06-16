@@ -1,13 +1,49 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubetls
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubetls-serviceact
+  namespace: kubetls
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubetls-cr
+rules:
+- apiGroups: [""]
+  resources: ["services", "secrets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubetls-crb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetls-cr
+subjects:
+- kind: ServiceAccount
+  name: kubetls-serviceact
+  namespace: kubetls
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: kubetls
+  namespace: kubetls
 spec:
   template:
     spec:
+      serviceAccountName: kubetls-serviceact
       containers:
       - name: kubetls
         image: nyrahul/tlsscan:latest
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+        command: ["./k8s_tlsscan.sh"]
       restartPolicy: Never
   backoffLimit: 4
+---
