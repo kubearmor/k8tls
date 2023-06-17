@@ -81,4 +81,6 @@ docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.li
 * Check for HTTP Public Key Pinning (HPKP)
 * Check for use of TLS Fallback SCSV to Prevent Protocol Downgrade Attacks
 * Check if Secure Renegotiation is enabled. (Secure renegotiation is a feature of the SSL/TLS protocols that allows the client or server to request a new TLS handshake in the middle of a session. This can be useful for a variety of reasons, such as refreshing encryption keys or changing the level of encryption.)
-* Validate SSL/TLS best practices mentioned [here](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices).
+* Validate SSL/TLS best practices.
+  * [ssllabs](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices)
+  * [NIST SP 800-52](https://csrc.nist.gov/publications/detail/sp/800-52/rev-2/final).
