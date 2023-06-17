@@ -146,6 +146,7 @@ main()
 		ack '.*NO_TLS.*' --passthru --color-match='red' --color | \
 		ack '.*CONNFAIL.*' --passthru --color-match='yellow' --color | \
 		ack '.* OK .*' --passthru --color --color-match='green' --color
+	echo ;
 }
 
 # Processing starts here
