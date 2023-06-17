@@ -1,4 +1,4 @@
-# TLS Scan
+# TLS Scanner
 
 Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
 
