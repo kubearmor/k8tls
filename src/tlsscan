@@ -142,7 +142,7 @@ main()
 		scantls
 	done < $infile
 	jsontrailer
-	[[ -f "$csvout" ]] && csvlook $csvout --max-column-width 40 | \
+	[[ -f "$csvout" ]] && csvlook $csvout | \
 		ack '.*NO_TLS.*' --passthru --color-match='red' --color | \
 		ack '.*CONNFAIL.*' --passthru --color-match='yellow' --color | \
 		ack '.* OK .*' --passthru --color --color-match='green' --color
@@ -151,4 +151,3 @@ main()
 # Processing starts here
 parse_cmdargs "$@"
 main
-exit 0
