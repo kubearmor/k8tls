@@ -14,14 +14,17 @@ Tool to scan/verify if the TLS connection parameters and the certificates usage 
   * 5G Security: [3GPP TS 33.501](https://www.etsi.org/deliver/etsi_ts/133500_133599/133501/15.04.00_60/ts_133501v150400p.pdf), Security architecture and procedures for 5G system mandates TLS across all control plane connections.
 * Operates in k8s, containerized, and non-containerized environments
 
-## Scan k8s services
+## Getting Started
+
+### Scan k8s services
 
 For k8s, the solution gets deployed as a job that scans the k8s service ports.
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/kubetls/tlsview/main/k8s/job.yaml
-$ kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o name)
-
+kubectl apply -f https://raw.githubusercontent.com/kubetls/tlsview/main/k8s/job.yaml
+kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o name) -f
+```
+```
 | Name                                                             | Address              | Status | Version | Ciphersuite            | Hash   | Signature | Verification                                 |
 | ---------------------------------------------------------------- | -------------------- | ------ | ------- | ---------------------- | ------ | --------- | -------------------------------------------- |
 | accuknox-agents/agents-operator[health-check]                    | 10.100.17.218:9090   | NO_TLS |         |                        |        |           |                                              |
@@ -40,7 +43,7 @@ $ kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o na
 | wordpress-mysql/wordpress                                        | 10.100.189.9:80      | NO_TLS |         |                        |        |           |                                              |
 ```
 
-## Scan container environment
+### Scan container environment
 
 ```
 docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.list --csv data/out.csv
