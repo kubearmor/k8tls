@@ -6,9 +6,9 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
 
 ## Use-Cases
 * :lock: Check if the server port is TLS enabled or not.
-* :page_with_curl: Check TLS version, Ciphersuite, Hash, and Signature for the connection.
+* :page_with_curl: Check TLS version, Ciphersuite, Hash, and Signature for the connection. Are these TLS parameters per the TLS best practices guide?
 * Certificate Verification
-  * :boom: Is certificate expired or revoked?
+  * :boom: Is the certificate expired or revoked?
   * :writing_hand: Is it a self-signed certificate?
   * :chains: Is there a self-signed certificate in the full certificate chain?
 * Verification of TLS enabled communication and validation of TLS parameters are key to most compliance frameworks. For e.g.,
@@ -73,6 +73,12 @@ docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.li
 
 ## Roadmap
 * Add service scanning for e.g., mysql, cassandra, ssh etc
+* Check if the key size
 * Add support for DTLS scanning
 * In detailed mode, enlist all possible TLS versions, Ciphersuites, Hash/Signature algorithms supported.
 * Verify if algorithms supporting PFS (Pure Forward Secrecy) are used.
+* Check for presence of HTTP Strict Transport Security (HSTS)
+* Check for HTTP Public Key Pinning (HPKP)
+* Check for use of TLS Fallback SCSV to Prevent Protocol Downgrade Attacks
+* Check if Secure Renegotiation is enabled. (Secure renegotiation is a feature of the SSL/TLS protocols that allows the client or server to request a new TLS handshake in the middle of a session. This can be useful for a variety of reasons, such as refreshing encryption keys or changing the level of encryption.)
+* Validate SSL/TLS best practices mentioned [here](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices).
