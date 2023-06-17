@@ -26,14 +26,18 @@ while read -r line; do
 	svc=${list[1]}
 	clusterip=${list[2]}
 	! [[ $clusterip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && continue
+	IFS=',' pnames=($(echo "${list[3]}"))
 	IFS=',' ports=($(echo "${list[4]}"))
 	IFS=',' prots=($(echo "${list[5]}"))
 	for ((i=0;i<5;i++)); do
+		pname="${pnames[$i]}"
 		tport="${ports[$i]}"
 		prot="${prots[$i]}"
 		[[ "$tport" == ""  || "$prot" == "" ]] && break
 		[[ "$prot" != "TCP" ]] && echo "unsupported protocol $prot" && continue
-		echo "$clusterip:$tport $ns/$svc" >> $ADDRLIST
+		[[ "$pname" == "<none>" ]] && pname=""
+		[[ "$pname" != "" ]] && pname="[$pname]"
+		echo "$clusterip:$tport $ns/$svc$pname" >> $ADDRLIST
 	done
 	IFS=' '
 done < <(kubectl get svc --no-headers -A -o=custom-columns='NS:.metadata.namespace,NAME:.metadata.name,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort')
