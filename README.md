@@ -1,6 +1,18 @@
 # TLS Scan
 
-Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports.
+Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
+
+## Use-Cases:
+* Check if the server port is TLS enabled or not.
+* Check TLS version, Ciphersuite, Hash, and Signature for the connection.
+* Certificate Verification
+  * Is certificate expired or revoked?
+  * Is it a self-signed certificate?
+* Verification of TLS enabled communication and validation of TLS parameters are key to most compliance frameworks. For e.g.,
+  * Under PCI-DSS 3.2., compliant servers must drop support for TLS 1.0 and “migrate to a minimum of TLS 1.1, Preferably TLS 1.2.”
+  * HIPAA mandates use of TLS but technically allows use of all versions of TLS.
+  * 5G Security: [3GPP TS 33.501](https://www.etsi.org/deliver/etsi_ts/133500_133599/133501/15.04.00_60/ts_133501v150400p.pdf), Security architecture and procedures for 5G system mandates TLS across all control plane connections.
+* Operates in k8s, containerized, and non-containerized environments
 
 ## Scan k8s services
 
@@ -15,7 +27,7 @@ $ kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o na
 | accuknox-agents/agents-operator[health-check]                    | 10.100.17.218:9090   | NO_TLS |         |                        |        |           |                                              |
 | accuknox-agents/agents-operator[spire-agent]                     | 10.100.17.218:9091   | NO_TLS |         |                        |        |           |                                              |
 | accuknox-agents/discovery-engine                                 | 10.100.16.51:9089    | NO_TLS |         |                        |        |           |                                              |
-| default/kubernetes[https]                                        | 10.100.0.1:443       | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | unable to verify the first certificate       |
+| default/kubernetes[https]                                        | 10.100.0.1:443       | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | OK                                           |
 | kube-system/kube-dns[dns-tcp]                                    | 10.100.0.10:53       | NO_TLS |         |                        |        |           |                                              |
 | kube-system/kubearmor                                            | 10.100.212.208:32767 | NO_TLS |         |                        |        |           |                                              |
 | kube-system/kubearmor-annotation-manager-metrics-service[https]  | 10.100.162.219:443   | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | unable to verify the first certificate       |
@@ -68,3 +80,8 @@ checking [localhost:22 namespace:deployment/wordpress]...
 docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.list --csv data/out.csv
 ```
 > Note: The command assumes that the current folder contains `addr.list` file containing the list of addresses to scan.
+
+## Roadmap
+* Add service scanning for e.g., mysql, cassandra, ssh etc
+* Add support for DTLS scanning
+* In detailed mode, enlist all possible TLS versions, Ciphersuites, Hash/Signature algorithms supported.
