@@ -26,10 +26,10 @@ while read -r line; do
 	svc=${list[1]}
 	clusterip=${list[2]}
 	! [[ $clusterip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && continue
-	IFS=',' tgtports=($(echo "${list[6]}"))
+	IFS=',' ports=($(echo "${list[4]}"))
 	IFS=',' prots=($(echo "${list[5]}"))
 	for ((i=0;i<5;i++)); do
-		tport="${tgtports[$i]}"
+		tport="${ports[$i]}"
 		prot="${prots[$i]}"
 		[[ "$tport" == ""  || "$prot" == "" ]] && break
 		[[ "$prot" != "TCP" ]] && echo "unsupported protocol $prot" && continue

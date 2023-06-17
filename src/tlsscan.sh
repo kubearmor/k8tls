@@ -89,26 +89,13 @@ csvreport()
 EOF
 }
 
-scantls()
+opensslscan()
 {
-	# unset previous vars
-	varlist=`set | grep "^TLS_" | sed 's/=.*//g'`
-	varlist=`echo $varlist`
-	unset $varlist
-
 	tmp=/tmp/tls.out
 	rm -f $tmp 2>/dev/null
-	timeout 3s openssl s_client -CApath /etc/ssl/certs/ -connect "$1" -brief < /dev/null 2>$tmp
-	ret=$?
+	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$TLS_Address" -brief < /dev/null 2>$tmp
 #	echo "ret=$ret"
 #	cat $tmp
-	TLS_Address="$1"
-	TLS_Name="$2"
-	case "$ret" in
-		0 ) TLS_Status="TLS";;
-		124 ) TLS_Status="NO_TLS";;
-		* ) TLS_Status="CONNFAIL";;
-	esac
 	conn_estd=0
 	while read line; do
 		[[ "$line" == "CONNECTION ESTABLISHED" ]] && conn_estd=1
@@ -118,8 +105,28 @@ scantls()
 		val=${line/*: /}
 		key=${key// /_}
 		printf -v "TLS_$key" '%s' "$val"
+		TLS_Status="TLS"
 	done < $tmp
 	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
+}
+
+unsetvars()
+{
+	# unset previous vars
+	varlist=`set | grep "^TLS_" | sed 's/=.*//g'`
+	varlist=`echo $varlist`
+	unset $varlist
+}
+
+scantls()
+{
+	TLS_Status="NO_TLS"
+	nc -w 1 -z ${TLS_Address/:/ }
+	case "$?" in
+		0) opensslscan ;;
+		*) TLS_Status="CONNFAIL" ;;
+	esac
+
 	jsonreport
 	csvreport
 }
@@ -129,7 +136,10 @@ main()
 	while read line; do
 		[[ $line == \#* ]] && continue
 		echo "checking [$line]..."
-		scantls "${line/ */}" "${line/* /}"
+		unsetvars
+		TLS_Address=${line/ */}
+		TLS_Name=${line/* /}
+		scantls
 	done < $infile
 	jsontrailer
 	[[ -f "$csvout" ]] && csvlook $csvout
