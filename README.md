@@ -1,4 +1,4 @@
-# TLS View
+# TLS Scan
 
 Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports.
 
