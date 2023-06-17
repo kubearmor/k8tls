@@ -1,3 +1,41 @@
 #!/bin/bash
 
-kubectl get svc -A
+<<SAMPLE_OUT
+NS                NAME                                            ClusterIP        PORTNAME                   PORT        PROTOCOL   TGTPORT
+accuknox-agents   agents-operator                                 10.100.17.218    health-check,spire-agent   9090,9091   TCP,TCP    9090,9091
+accuknox-agents   discovery-engine                                10.100.16.51     <none>                     9089        TCP        9089
+default           kubernetes                                      10.100.0.1       https                      443         TCP        443
+kube-system       kube-dns                                        10.100.0.10      dns,dns-tcp                53,53       UDP,TCP    53,53
+kube-system       kubearmor                                       10.100.212.208   <none>                     32767       TCP        32767
+kube-system       kubearmor-annotation-manager-metrics-service    10.100.162.219   https                      443         TCP        9443
+kube-system       kubearmor-host-policy-manager-metrics-service   10.100.35.162    https                      8443        TCP        https
+kube-system       kubearmor-policy-manager-metrics-service        10.100.145.145   https                      8443        TCP        https
+vault             vault                                           10.100.85.110    http,https-internal        8200,8201   TCP,TCP    8200,8201
+vault             vault-agent-injector-svc                        10.100.198.112   https                      443         TCP        8080
+vault             vault-internal                                  None             http,https-internal        8200,8201   TCP,TCP    8200,8201
+wordpress-mysql   mysql                                           10.100.212.210   <none>                     3306        TCP        3306
+wordpress-mysql   wordpress                                       10.100.189.9     <none>                     80          TCP        80
+SAMPLE_OUT
+
+BDIR=`dirname $0`
+ADDRLIST="addr.list"
+rm -f $ADDRLIST
+while read -r line; do
+	IFS=' ' list=($(echo $line)) 
+	ns=${list[0]}
+	svc=${list[1]}
+	clusterip=${list[2]}
+	! [[ $clusterip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && continue
+	IFS=',' tgtports=($(echo "${list[6]}"))
+	IFS=',' prots=($(echo "${list[5]}"))
+	for ((i=0;i<5;i++)); do
+		tport="${tgtports[$i]}"
+		prot="${prots[$i]}"
+		[[ "$tport" == ""  || "$prot" == "" ]] && break
+		[[ "$prot" != "TCP" ]] && echo "unsupported protocol $prot" && continue
+		echo "$clusterip:$tport $ns/$svc" >> $ADDRLIST
+	done
+	IFS=' '
+done < <(kubectl get svc --no-headers -A -o=custom-columns='NS:.metadata.namespace,NAME:.metadata.name,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort')
+
+$BDIR/tlsscan.sh -f $ADDRLIST
