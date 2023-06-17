@@ -71,6 +71,8 @@ docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.li
 ```
 > Note: The command assumes that the current folder contains `addr.list` file containing the list of addresses to scan.
 
+[![KubeTLS](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ.svg)](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ)
+
 ## Roadmap
 * Add service scanning for e.g., mysql, cassandra, ssh etc
 * Check if the key size
