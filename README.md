@@ -2,17 +2,21 @@
 
 Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
 
-## Use-Cases:
-* Check if the server port is TLS enabled or not.
-* Check TLS version, Ciphersuite, Hash, and Signature for the connection.
+Our primary reason to work on this tool was to handle 5G Security Control checks that mandates use of TLS within 5G Control Plane.
+
+## Use-Cases
+* :lock: Check if the server port is TLS enabled or not.
+* :page_with_curl: Check TLS version, Ciphersuite, Hash, and Signature for the connection.
 * Certificate Verification
-  * Is certificate expired or revoked?
-  * Is it a self-signed certificate?
+  * :boom: Is certificate expired or revoked?
+  * :writing_hand: Is it a self-signed certificate?
+  * :chains: Is there a self-signed certificate in the full certificate chain?
 * Verification of TLS enabled communication and validation of TLS parameters are key to most compliance frameworks. For e.g.,
   * Under PCI-DSS 3.2., compliant servers must drop support for TLS 1.0 and “migrate to a minimum of TLS 1.1, Preferably TLS 1.2.”
   * HIPAA mandates use of TLS but technically allows use of all versions of TLS.
   * 5G Security: [3GPP TS 33.501](https://www.etsi.org/deliver/etsi_ts/133500_133599/133501/15.04.00_60/ts_133501v150400p.pdf), Security architecture and procedures for 5G system mandates TLS across all control plane connections.
 * Operates in k8s, containerized, and non-containerized environments
+  * :infinity: Integrate this in CI/CD pipeline to identify use of insecure ports early. Json report option is available.
 
 ## Getting Started
 
@@ -69,3 +73,4 @@ docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.li
 * Add service scanning for e.g., mysql, cassandra, ssh etc
 * Add support for DTLS scanning
 * In detailed mode, enlist all possible TLS versions, Ciphersuites, Hash/Signature algorithms supported.
+* Verify if algorithms supporting PFS (Pure Forward Secrecy) are used.
