@@ -43,7 +43,7 @@ spec:
       containers:
       - name: kubetls
         image: nyrahul/tlsscan:latest
-        command: ["./k8s_tlsscan.sh"]
+        command: ["./k8s_tlsscan"]
       restartPolicy: Never
   backoffLimit: 4
 ---

@@ -9,4 +9,4 @@ RUN update-ca-certificates
 
 WORKDIR /home/kubetls
 
-ENTRYPOINT ["/home/kubetls/tlsscan.sh"]
+ENTRYPOINT ["/home/kubetls/tlsscan"]
