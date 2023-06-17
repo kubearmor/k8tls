@@ -151,3 +151,4 @@ main()
 # Processing starts here
 parse_cmdargs "$@"
 main
+exit 0
