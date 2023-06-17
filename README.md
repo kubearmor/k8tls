@@ -16,7 +16,9 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
   * HIPAA mandates use of TLS but technically allows use of all versions of TLS.
   * 5G Security: [3GPP TS 33.501](https://www.etsi.org/deliver/etsi_ts/133500_133599/133501/15.04.00_60/ts_133501v150400p.pdf), Security architecture and procedures for 5G system mandates TLS across all control plane connections.
 * Operates in k8s, containerized, and non-containerized environments
+  * :rocket: Scans control + data plane services in k8s in full auto pilot mode. No user-inputs needed.
   * :infinity: Integrate this in CI/CD pipeline to identify use of insecure ports early. Json report option is available.
+  * :dart: No proxy or no sidecar implies no impact on runtime performance.
 
 ## Getting Started
 
