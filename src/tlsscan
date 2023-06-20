@@ -120,7 +120,7 @@ unsetvars()
 
 scantls()
 {
-	TLS_Status="NO_TLS"
+	TLS_Status="PLAIN_TEXT"
 	nc -w 1 -z ${TLS_Address/:/ }
 	case "$?" in
 		0) opensslscan ;;
@@ -143,8 +143,8 @@ main()
 	done < $infile
 	jsontrailer
 	[[ -f "$csvout" ]] && csvlook $csvout | \
-		ack '.*NO_TLS.*' --passthru --color-match='red' --color | \
-		ack '.*CONNFAIL.*' --passthru --color-match='yellow' --color | \
+		ack '.*PLAIN_TEXT.*' --passthru --color-match='red' --color | \
+		ack '.*CONNFAIL.*' --passthru --color-match='cyan' --color | \
 		ack '.* OK .*' --passthru --color --color-match='green' --color
 	echo ;
 }
