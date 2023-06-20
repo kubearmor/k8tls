@@ -47,6 +47,12 @@ kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o name
 | vault/vault-agent-injector-svc[https]                            | 10.100.198.112:443   | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | ECDSA     | unable to verify the first certificate       |
 | wordpress-mysql/mysql                                            | 10.100.212.210:3306  | PLAIN_TEXT |         |                        |        |           |                                              |
 | wordpress-mysql/wordpress                                        | 10.100.189.9:80      | PLAIN_TEXT |         |                        |        |           |                                              |
+
+Summary:
+| Status                  | Count |
+| ----------------------- | ----- |
+| self-signed certificate |     2 |
+| insecure port           |     9 |
 ```
 
 ### Scan container environment
