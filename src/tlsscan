@@ -47,6 +47,8 @@ parse_cmdargs()
 	[[ "$infile" == "" ]] && echo "No address list provided, use --infile <file>" && exit 2
 	[[ "$csvout" == "" ]] && csvout="/tmp/out.csv"
 	[[ -f $csvout ]] && rm -f $csvout
+	[[ "$summcsv" == "" ]] && summcsv="/tmp/summary.csv"
+	[[ -f $summcsv ]] && rm -f $summcsv
 }
 
 jsonreport()
@@ -131,6 +133,36 @@ scantls()
 	csvreport
 }
 
+getsummary()
+{
+	status_arr=( 
+		"certificate has expired"
+		"self-signed certificate"
+		"insecure port"
+		"connection failure"
+	)
+	regex_arr=( 
+		"certificate has expired"
+		"self-signed certificate"
+		"PLAIN_TEXT"
+		"CONNFAIL"
+	)
+	echo "Status,Count" > $summcsv
+	for((i=0;;i++)); do
+		status="${status_arr[$i]}"
+		regex="${regex_arr[$i]}"
+		[[ "$status" == "" ]] && break
+		cnt=`grep "$regex" $csvout | wc -l`
+		[[ $cnt -eq 0 ]] && continue
+		echo "$status,$cnt" >> $summcsv
+	done
+	echo "Summary:"
+	csvlook $summcsv
+#		ack '.*PLAIN_TEXT.*' --passthru --color-match='red' --color | \
+#		ack '.*CONNFAIL.*' --passthru --color-match='cyan' --color | \
+#		ack '.* OK .*' --passthru --color --color-match='green' --color
+}
+
 main()
 {
 	while read line; do
@@ -147,6 +179,7 @@ main()
 		ack '.*CONNFAIL.*' --passthru --color-match='cyan' --color | \
 		ack '.* OK .*' --passthru --color --color-match='green' --color
 	echo ;
+	getsummary
 }
 
 # Processing starts here
