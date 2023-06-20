@@ -80,15 +80,16 @@ docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.li
 [![KubeTLS](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ.svg)](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ)
 
 ## Roadmap
-* Add service scanning for e.g., mysql, cassandra, ssh etc
-* Check if the key size
+* Validate based on SSL/TLS best practices.
+  * [NIST SP 800-52](https://csrc.nist.gov/publications/detail/sp/800-52/rev-2/final).
+  * [ssllabs](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices)
+* Check if the key size is ok
 * Add support for DTLS scanning
 * In detailed mode, enlist all possible TLS versions, Ciphersuites, Hash/Signature algorithms supported.
 * Verify if algorithms supporting PFS (Pure Forward Secrecy) are used.
 * Check for presence of HTTP Strict Transport Security (HSTS)
 * Check for HTTP Public Key Pinning (HPKP)
+* TLS compression checks
 * Check for use of TLS Fallback SCSV to Prevent Protocol Downgrade Attacks
 * Check if Secure Renegotiation is enabled. (Secure renegotiation is a feature of the SSL/TLS protocols that allows the client or server to request a new TLS handshake in the middle of a session. This can be useful for a variety of reasons, such as refreshing encryption keys or changing the level of encryption.)
-* Validate SSL/TLS best practices.
-  * [ssllabs](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices)
-  * [NIST SP 800-52](https://csrc.nist.gov/publications/detail/sp/800-52/rev-2/final).
+* Add service scanning for e.g., mysql, cassandra, ssh etc
