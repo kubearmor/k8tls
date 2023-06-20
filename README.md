@@ -1,4 +1,4 @@
-# TLS Scanner
+# TLS Inspector
 
 Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
 
@@ -31,22 +31,28 @@ kubectl apply -f https://raw.githubusercontent.com/kubearmor/kubetls/main/k8s/jo
 kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o name) -f
 ```
 ```
-| Name                                                             | Address              | Status | Version | Ciphersuite            | Hash   | Signature | Verification                                 |
-| ---------------------------------------------------------------- | -------------------- | ------ | ------- | ---------------------- | ------ | --------- | -------------------------------------------- |
-| accuknox-agents/agents-operator[health-check]                    | 10.100.17.218:9090   | NO_TLS |         |                        |        |           |                                              |
-| accuknox-agents/agents-operator[spire-agent]                     | 10.100.17.218:9091   | NO_TLS |         |                        |        |           |                                              |
-| accuknox-agents/discovery-engine                                 | 10.100.16.51:9089    | NO_TLS |         |                        |        |           |                                              |
-| default/kubernetes[https]                                        | 10.100.0.1:443       | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | OK                                           |
-| kube-system/kube-dns[dns-tcp]                                    | 10.100.0.10:53       | NO_TLS |         |                        |        |           |                                              |
-| kube-system/kubearmor                                            | 10.100.212.208:32767 | NO_TLS |         |                        |        |           |                                              |
-| kube-system/kubearmor-annotation-manager-metrics-service[https]  | 10.100.162.219:443   | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | unable to verify the first certificate       |
-| kube-system/kubearmor-host-policy-manager-metrics-service[https] | 10.100.35.162:8443   | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | self-signed certificate in certificate chain |
-| kube-system/kubearmor-policy-manager-metrics-service[https]      | 10.100.145.145:8443  | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | self-signed certificate in certificate chain |
-| vault/vault[http]                                                | 10.100.85.110:8200   | NO_TLS |         |                        |        |           |                                              |
-| vault/vault[https-internal]                                      | 10.100.85.110:8201   | NO_TLS |         |                        |        |           |                                              |
-| vault/vault-agent-injector-svc[https]                            | 10.100.198.112:443   | TLS    | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | ECDSA     | unable to verify the first certificate       |
-| wordpress-mysql/mysql                                            | 10.100.212.210:3306  | NO_TLS |         |                        |        |           |                                              |
-| wordpress-mysql/wordpress                                        | 10.100.189.9:80      | NO_TLS |         |                        |        |           |                                              |
+| Name                                                             | Address              | Status     | Version | Ciphersuite            | Hash   | Signature | Verification                                 |
+| ---------------------------------------------------------------- | -------------------- | ---------- | ------- | ---------------------- | ------ | --------- | -------------------------------------------- |
+| accuknox-agents/agents-operator[health-check]                    | 10.100.17.218:9090   | PLAIN_TEXT |         |                        |        |           |                                              |
+| accuknox-agents/agents-operator[spire-agent]                     | 10.100.17.218:9091   | PLAIN_TEXT |         |                        |        |           |                                              |
+| accuknox-agents/discovery-engine                                 | 10.100.16.51:9089    | PLAIN_TEXT |         |                        |        |           |                                              |
+| default/kubernetes[https]                                        | 10.100.0.1:443       | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | unable to verify the first certificate       |
+| kube-system/kube-dns[dns-tcp]                                    | 10.100.0.10:53       | PLAIN_TEXT |         |                        |        |           |                                              |
+| kube-system/kubearmor                                            | 10.100.212.208:32767 | PLAIN_TEXT |         |                        |        |           |                                              |
+| kube-system/kubearmor-annotation-manager-metrics-service[https]  | 10.100.162.219:443   | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | unable to verify the first certificate       |
+| kube-system/kubearmor-host-policy-manager-metrics-service[https] | 10.100.35.162:8443   | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | self-signed certificate in certificate chain |
+| kube-system/kubearmor-policy-manager-metrics-service[https]      | 10.100.145.145:8443  | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | RSA-PSS   | self-signed certificate in certificate chain |
+| vault/vault[http]                                                | 10.100.85.110:8200   | PLAIN_TEXT |         |                        |        |           |                                              |
+| vault/vault[https-internal]                                      | 10.100.85.110:8201   | PLAIN_TEXT |         |                        |        |           |                                              |
+| vault/vault-agent-injector-svc[https]                            | 10.100.198.112:443   | TLS        | TLSv1.3 | TLS_AES_128_GCM_SHA256 | SHA256 | ECDSA     | unable to verify the first certificate       |
+| wordpress-mysql/mysql                                            | 10.100.212.210:3306  | PLAIN_TEXT |         |                        |        |           |                                              |
+| wordpress-mysql/wordpress                                        | 10.100.189.9:80      | PLAIN_TEXT |         |                        |        |           |                                              |
+
+Summary:
+| Status                  | Count |
+| ----------------------- | ----- |
+| self-signed certificate |     2 |
+| insecure port           |     9 |
 ```
 
 ### Scan container environment
