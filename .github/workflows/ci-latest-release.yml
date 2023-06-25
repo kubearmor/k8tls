@@ -32,6 +32,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: primalpimmy/kubetls:latest
+        tags: kubearmor/kubetls:latest
 
       

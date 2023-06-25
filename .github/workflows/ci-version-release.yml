@@ -31,4 +31,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: primalpimmy/kubetls:${{ github.ref_name}}
+        tags: kubearmor/kubetls:${{ github.ref_name}}
