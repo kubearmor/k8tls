@@ -29,7 +29,7 @@ table:
   html: /tmp/out.html
 columns:
   - name: Name
-    maxwidth: 30
+    # maxwidth: 30
     align: center
   - name: Status
     align: center
