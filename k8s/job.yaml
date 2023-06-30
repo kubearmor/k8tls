@@ -42,7 +42,7 @@ spec:
       serviceAccountName: kubetls-serviceact
       containers:
       - name: kubetls
-        image: nyrahul/tlsscan:latest
+        image: accuknox/kubetls:latest
         command: ["./k8s_tlsscan"]
       restartPolicy: Never
   backoffLimit: 4
