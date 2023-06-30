@@ -1,0 +1,51 @@
+# color spec:
+#   Reset, Bold, Faint, Italic, Underline, BlinkSlow, BlinkRapid, ReverseVideo, Concealed, CrossedOut
+#   {Fg, Bg, FgHi, BgHi} => Black, Red, Green, Yellow, Blue, Magenta, Cyan, White
+#
+# align spec:
+#   default | left | center | justify | right
+#   ref: https://github.com/jedib0t/go-pretty/blob/main/text/align.go#L11
+#
+# table:
+#   title: "Title"
+#   markdown: /tmp/markdown.md
+#   html: /tmp/html.html
+#   nostdout: true   # Disable rendering table to stdout
+# columns:
+#   - name: XYZ
+#     maxwidth: 10
+#     minwidth: 10
+#     align: center
+#     automerge: true
+#     paint:
+#       - regex: COLUMN_VALUE_REGEX
+#         color:
+#           - FgRed
+#           - BgYellow
+---
+table:
+  # title: "Kubernetes Cluster Service Ports status"
+  markdown: /tmp/out.md
+  html: /tmp/out.html
+columns:
+  - name: Name
+    maxwidth: 30
+    align: center
+  - name: Status
+    align: center
+    paint:
+      - regex: PLAIN_TEXT
+        color:
+          - FgRed
+      - regex: "CONN.*"
+        color:
+          - FgYellow
+  - name: Verification
+    paint:
+      - regex: ".*expired.*"
+        color:
+          - BlinkSlow
+          - FgHiRed
+      - regex: ".*self-signed.*certificate"
+        color:
+          - FgCyan

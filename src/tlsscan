@@ -12,7 +12,6 @@ chk_cmd()
 prerequisites()
 {
 	chk_cmd openssl "Install OpenSSL"
-	chk_cmd csvlook "apt install csvkit"
 }
 
 usage()
@@ -157,10 +156,7 @@ getsummary()
 		echo "$status,$cnt" >> $summcsv
 	done
 	echo "Summary:"
-	csvlook $summcsv
-#		ack '.*PLAIN_TEXT.*' --passthru --color-match='red' --color | \
-#		ack '.*CONNFAIL.*' --passthru --color-match='cyan' --color | \
-#		ack '.* OK .*' --passthru --color --color-match='green' --color
+	tabled --in $summcsv
 }
 
 main()
@@ -174,10 +170,7 @@ main()
 		scantls
 	done < $infile
 	jsontrailer
-	[[ -f "$csvout" ]] && csvlook $csvout | \
-		ack '.*PLAIN_TEXT.*' --passthru --color-match='red' --color | \
-		ack '.*CONNFAIL.*' --passthru --color-match='cyan' --color | \
-		ack '.* OK .*' --passthru --color --color-match='green' --color
+	[[ -f "$csvout" ]] && tabled --in $csvout --config tabled.yaml
 	echo ;
 	getsummary
 }

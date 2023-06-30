@@ -1,5 +1,5 @@
 build:
-	docker build -t nyrahul/tlsscan:latest .
+	docker build -t accuknox/kubetls:latest .
 
 push:
-	docker push nyrahul/tlsscan:latest
+	docker push accuknox/kubetls:latest
