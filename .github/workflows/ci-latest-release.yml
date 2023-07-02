@@ -5,7 +5,8 @@ on:
     branches: [ "main" ]
     paths:
     - "src/**"
-
+  release: 
+    types: [published]
 jobs:
 
   build:
@@ -27,11 +28,20 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_AUTHTOK }}
         
-    - name: Build and push
+    - name: Build and push latest
+      if: ${{ github.ref_name == 'main' }}
       uses: docker/build-push-action@v4
       with:
         context: .
         push: true
         tags: kubearmor/kubetls:latest
+    
+    - name: Build and push version
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: kubearmor/kubetls:${{ github.ref_name}}
 
       
