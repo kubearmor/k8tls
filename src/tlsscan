@@ -1,5 +1,9 @@
 #!/bin/bash
 
+NIST_SP_800_52="config/nist-sp-800-52.json"
+JSON_REPORT="tls_conn_report.json"
+CSV_SUMMARY="summary.csv"
+
 chk_cmd()
 {
 	if ! command -v $1 &>/dev/null; then
@@ -22,7 +26,6 @@ Usage: $0 <options>
 Options:
 -f | --infile input file containing list of addresses (mandatory)
 --json output json file
---csv output csv file
 -h | --help
 EOF
 	exit 1
@@ -30,71 +33,148 @@ EOF
 
 parse_cmdargs()
 {
-	OPTS=`getopt -o f:h --long csv:,infile:,json:,help -n 'parse-options' -- "$@"`
+	OPTS=`getopt -o f:h --long infile:,json:,help -n 'parse-options' -- "$@"`
 	[[ $? -ne 0 ]] && usage
 	eval set -- "$OPTS"
 	while true; do
 		case "$1" in
 			-f | --infile ) infile="$2"; [[ ! -f $infile ]] && echo "$infile file not found" && exit 2; shift 2;;
-			--json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
-			--csv ) csvout="$2"; shift 2;;
+			--json ) JSON_REPORT="$2"; [[ -f $JSON_REPORT ]] && rm -f $JSON_REPORT; shift 2;;
 			-h | --help ) usage; shift 1;;
 			-- ) shift; break ;;
 			* ) break ;;
 		esac
 	done
 	[[ "$infile" == "" ]] && echo "No address list provided, use --infile <file>" && exit 2
-	[[ "$csvout" == "" ]] && csvout="/tmp/out.csv"
-	[[ -f $csvout ]] && rm -f $csvout
-	[[ "$summcsv" == "" ]] && summcsv="/tmp/summary.csv"
-	[[ -f $summcsv ]] && rm -f $summcsv
 }
 
-jsonreport()
+tls_json_report_beginner()
 {
-	[[ "$jsonout" == "" ]] && return
-	if [ -f "$jsonout" ]; then
-		echo -en "\t},\n" >> $jsonout
-	else
-		echo -en "[\n" > $jsonout
+	echo -en "[\n" > $JSON_REPORT
+}
+
+tls_conn_beginner()
+{
+	if [ $1 -gt 1 ]; then
+		echo -en ",\n" >> $JSON_REPORT
 	fi
-	cat << EOF >> $jsonout
-	{
+	echo -en "\t{\n" >> $JSON_REPORT
+	cat << EOF >> $JSON_REPORT
 		"Name": "$TLS_Name",
 		"Address": "$TLS_Address",
 		"Status": "$TLS_Status",
-		"Protocol_version": "$TLS_Protocol_version",
-		"Ciphersuite": "$TLS_Ciphersuite",
-		"Hash_used": "$TLS_Hash_used",
-		"Peer_certificate": "$TLS_Peer_certificate",
-		"Server_Temp_Key": "$TLS_Server_Temp_Key",
-		"Signature_type": "$TLS_Signature_type",
-		"Verification": "$TLS_Verification"
+		"Max_Protocol_Version": "$TLS_Max_Protocol_Version",
+		"Total_Supported_Cipher_Suites": "$TLS_Conn_Success_Count",
+		"Ciphersuites": [
 EOF
 }
 
-jsontrailer()
+TLS_CONN_REPORT=""
+TLS_Conn_Success_Count=0
+TLS_Max_Protocol_Version=""
+
+TLS_Cert_Verification=""
+
+tls_conn_status_append()
 {
-	[[ ! -f "$jsonout" ]] && return
-	echo -en "\n\t}\n]" >> $jsonout
+	TLS_CONN_REPORT=$TLS_CONN_REPORT"$1"
 }
 
-csvreport()
+tls_conn_status()
 {
-	[[ "$csvout" == "" ]] && return
-	if [ ! -f "$csvout" ]; then
-		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification" > $csvout
+	if [ $TLS_Conn_Status == "Succeeded" ]; then
+		TLS_Conn_Success_Count=$((TLS_Conn_Success_Count+1))
+		[[ $TLS_Max_Protocol_Version == "" ]] && TLS_Max_Protocol_Version=$TLS_Protocol_version
 	fi
-	cat << EOF >> $csvout
-"$TLS_Name","$TLS_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification"
-EOF
+	if [ $1 -ne 1 ]; then
+		tls_conn_status_append ",\n"
+	fi
+	tls_conn_status_append "\t\t\t{\n"
+	tls_conn_status_append "\t\t\t\t\"Ciphersuite\": \"$TLS_Ciphersuite\",\n"
+	tls_conn_status_append "\t\t\t\t\"Version\": \"$TLS_Protocol_version\",\n"
+	tls_conn_status_append "\t\t\t\t\"ConnectionStatus\": \"$TLS_Conn_Status\"\n"
+	tls_conn_status_append "\t\t\t}" >> $JSON_REPORT
 }
+
+tls_conn_status_write_to_file()
+{
+	if [ $TLS_Conn_Success_Count -gt 0 ]; then
+		TLS_Status="TLS"
+	fi
+	tls_conn_beginner $1
+	echo -en $TLS_CONN_REPORT >> $JSON_REPORT
+	TLS_Max_Protocol_Version=""
+	TLS_CONN_REPORT=""
+	TLS_Conn_Success_Count=0
+}
+
+tls_conn_trailer()
+{
+	echo -en "\n\t\t]\n" >> $JSON_REPORT
+	echo -en "\t}" >> $JSON_REPORT
+}
+
+tls_json_report_trailer()
+{
+	echo -en "\n" >> $JSON_REPORT
+	echo "]" >> $JSON_REPORT
+}
+
+reset_tls_conn_result()
+{
+	TLS_Protocol_version="-"
+	TLS_Ciphersuite="-"
+	TLS_Hash_used="-"
+	TLS_Signature_type="-"
+	TLS_Verification="-"
+	TLS_Conn_Status="-"
+}
+
+tls_conn_failure()
+{
+	TLS_Status="CONNFAIL"
+	TLS_Protocol_version=$1
+	TLS_Ciphersuite=$2
+}
+
+declare -A ossl_tls_ver_opt=(
+	["TLSv1.3"]="-tls1_3"
+	["TLSv1.2"]="-tls1_2"
+	["TLSv1.1"]="-tls1_1"
+	["TLSv1.0"]="-tls1_0"
+)
+
+# For TLS 1.2 and older versions, OpenSSL maintains a ciphersuite name
+# different from the name specified in RFC
+declare -A tls12_ossl_cs=(
+	["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"]="ECDHE-RSA-AES256-GCM-SHA384"
+	["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"]="ECDHE-RSA-AES128-GCM-SHA256"
+	["TLS_RSA_WITH_AES_256_CBC_SHA"]="AES256-SHA"
+	["TLS_RSA_WITH_AES_128_CBC_SHA"]="AES128-SHA"
+	["TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA"]="ECDHE-RSA-AES256-SHA"
+	["TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"]="ECDHE-RSA-AES128-SHA"
+)
 
 opensslscan()
 {
 	tmp=/tmp/tls.out
 	rm -f $tmp 2>/dev/null
-	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$TLS_Address" -brief < /dev/null 2>$tmp
+	ver_opt=${ossl_tls_ver_opt[$1]}
+	if [ -z $ver_opt ]; then
+		echo "Invalid TLS version $1"
+	fi
+	if [ $ver_opt == "-tls1_3" ]; then
+		ciphersuite=$2
+		s_client_opt="-ciphersuites $ciphersuite $ver_opt "
+	else
+		ciphersuite=${tls12_ossl_cs[$2]}
+		if [ -z $ciphersuite ]; then
+			echo "Unknown ciphersuite $ciphersuite"
+		fi
+		s_client_opt="-cipher $ciphersuite $ver_opt "
+	fi
+	reset_tls_conn_result
+	timeout 2s openssl s_client -connect $TLS_Address -CApath /etc/ssl/certs/ $s_client_opt -brief < /dev/null 2>$tmp
 #	echo "ret=$ret"
 #	cat $tmp
 	conn_estd=0
@@ -105,10 +185,21 @@ opensslscan()
 		key=${line/:*/}
 		val=${line/*: /}
 		key=${key// /_}
+		if [ "$val" == "$ciphersuite" ]; then
+			val=$2
+		fi
 		printf -v "TLS_$key" '%s' "$val"
 		TLS_Status="TLS"
 	done < $tmp
-	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
+	if [ $conn_estd -ne 1 ]; then
+		TLS_Conn_Status="Failed"
+		tls_conn_failure $1 $2
+	else
+		TLS_Conn_Status="Succeeded"
+		[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
+		TLS_Cert_Verification=$TLS_Verification
+	fi
+	tls_conn_status $3
 }
 
 unsetvars()
@@ -119,60 +210,108 @@ unsetvars()
 	unset $varlist
 }
 
-scantls()
+dotlsconnect()
 {
 	TLS_Status="PLAIN_TEXT"
 	nc -w 1 -z ${TLS_Address/:/ }
 	case "$?" in
-		0) opensslscan ;;
+		0) opensslscan $1 $2 $3 ;;
 		*) TLS_Status="CONNFAIL" ;;
 	esac
-
-	jsonreport
-	csvreport
 }
 
-getsummary()
+scantls()
 {
-	status_arr=( 
-		"certificate has expired"
-		"self-signed certificate"
-		"insecure port"
-		"connection failure"
-	)
-	regex_arr=( 
-		"certificate has expired"
-		"self-signed certificate"
-		"PLAIN_TEXT"
-		"CONNFAIL"
-	)
-	echo "Status,Count" > $summcsv
-	for((i=0;;i++)); do
-		status="${status_arr[$i]}"
-		regex="${regex_arr[$i]}"
-		[[ "$status" == "" ]] && break
-		cnt=`grep "$regex" $csvout | wc -l`
-		[[ $cnt -eq 0 ]] && continue
-		echo "$status,$cnt" >> $summcsv
+	cs_count=`jq '.cipher_suites | length' $NIST_SP_800_52`
+	count=0
+	for((i=0; i<$cs_count; i++)); do
+		cipher_suite=`jq .cipher_suites[$i].cipher_suite $NIST_SP_800_52 -r`
+		supported_ver_count=`jq '.cipher_suites['$i'].versions | length' $NIST_SP_800_52`
+		for((j=0; j<$supported_ver_count; j++)); do
+			tls_version=`jq .cipher_suites[$i].versions[$j].version $NIST_SP_800_52 -r`
+			echo "Connecting $TLS_Address with $tls_version and $cipher_suite"
+			count=$((count+1))
+			dotlsconnect $tls_version $cipher_suite $count
+		done
 	done
-	echo "Summary:"
-	tabled --in $summcsv
+	tls_conn_status_write_to_file $1
+	tls_conn_trailer
+}
+
+update_summary_report()
+{
+	# TODO Currently Ciphersuites names are skipped as tabled ouput is not clear
+	# due to huge set of ciphersuites. Only count is displayed.
+	if [ ! -f $CSV_SUMMARY ]; then
+		echo "NAME, ADDRESS, STATUS, VERSIONS, CIPHERSUITES, CERTIFICATES" > $CSV_SUMMARY
+	fi
+	echo "$1, $2, $3, $4, $5, $6" >> $CSV_SUMMARY
+}
+
+gen_summary()
+{
+	if [ -f $CSV_SUMMARY ]; then
+		rm -f $CSV_SUMMARY
+	fi
+	node_count=`jq '. | length' $JSON_REPORT`
+	for((i=0; i<$node_count; i++)); do
+		name=`jq .[$i].Name $JSON_REPORT -r`
+		addr=`jq .[$i].Address $JSON_REPORT -r`
+		status="PLAIN_TEXT"
+		versions=""
+		ciphersuites=""
+		ciphersuites_count=0
+		# TODO Capture cert type (RSA or ECDSA), key size, identity and
+		# verification result
+		certificates=$TLS_Cert_Verification
+		supported_cs_count=`jq .[$i].Total_Supported_Cipher_Suites $JSON_REPORT -r`
+		if [ $supported_cs_count == '0' ]; then
+			update_summary_report $name $addr $status "$versions" "$ciphersuites_count" "$certificates"
+			continue
+		fi
+		declare -A cs_map=()
+		declare -A versions_map=()
+		cs_count=`jq '.['$i'].Ciphersuites | length' $JSON_REPORT`
+		for((j=0; j<$cs_count; j++)); do
+			conn_status=`jq .[$i].Ciphersuites[$j].ConnectionStatus $JSON_REPORT -r`
+			ver=`jq .[$i].Ciphersuites[$j].Version $JSON_REPORT -r`
+			cs=`jq .[$i].Ciphersuites[$j].Ciphersuite $JSON_REPORT -r`
+			if [ $conn_status == "Succeeded" ]; then
+				status="TLS"
+				if [ -z ${cs_map[$cs]} ]; then
+					cs_map[$cs]="1"
+					((ciphersuites_count++))
+					[[ ! -z "$ciphersuites" ]] && ciphersuites=$ciphersuites" "
+					ciphersuites=${ciphersuites}${cs}
+				fi
+				if [ -z ${versions_map[$ver]} ]; then
+					versions_map[$ver]="1"
+					[[ ! -z "$versions" ]] && versions=$versions" "
+					versions=${versions}${ver}
+				fi
+			fi
+		done
+		update_summary_report $name $addr $status "$versions" "$ciphersuites_count" "$certificates"
+	done
+	tabled --in $CSV_SUMMARY
 }
 
 main()
 {
+	tls_json_report_beginner
+	addr_count=0
 	while read line; do
 		[[ $line == \#* ]] && continue
 		echo "checking [$line]..."
 		unsetvars
 		TLS_Address=${line/ */}
 		TLS_Name=${line/* /}
-		scantls
+		((addr_count++))
+		scantls $addr_count
 	done < $infile
-	jsontrailer
-	[[ -f "$csvout" ]] && tabled --in $csvout --config tabled.yaml
-	echo ;
-	getsummary
+	tls_json_report_trailer
+	echo "Summary:"
+	gen_summary
 }
 
 # Processing starts here
