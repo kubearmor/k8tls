@@ -30,7 +30,7 @@ EOF
 
 parse_cmdargs()
 {
-	OPTS=`getopt -o f:h --long csv:,infile:,json:,help -n 'parse-options' -- "$@"`
+	OPTS=`getopt -o f:h --long csv:,infile:,json:,ignore:,help -n 'parse-options' -- "$@"`
 	[[ $? -ne 0 ]] && usage
 	eval set -- "$OPTS"
 	while true; do
@@ -38,6 +38,7 @@ parse_cmdargs()
 			-f | --infile ) infile="$2"; [[ ! -f $infile ]] && echo "$infile file not found" && exit 2; shift 2;;
 			--json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
 			--csv ) csvout="$2"; shift 2;;
+			--ignore ) ignore_list="$2"; shift 2;;
 			-h | --help ) usage; shift 1;;
 			-- ) shift; break ;;
 			* ) break ;;
@@ -163,6 +164,12 @@ main()
 {
 	while read line; do
 		[[ $line == \#* ]] && continue
+		IFS=',' read -ra ignore_array <<< "$ignore_list"
+		ignore=false
+		for ignore_address in "${ignore_array[@]}"; do
+			[[ "$line" == *"$ignore_address"* ]] && ignore=true && break
+		done
+		[[ "$ignore" == true ]] && continue
 		echo "checking [$line]..."
 		unsetvars
 		TLS_Address=${line/ */}
