@@ -58,7 +58,7 @@ Summary:
 ### Scan container environment
 
 ```
-docker run --rm -v $PWD:/home/kubetls/data nyrahul/tlsscan --infile data/addr.list --csv data/out.csv
+docker run --rm -v $PWD/config:/home/kubetls/data kubearmor/kubetls --infile data/addr.list --csv data/out.csv
 
 | Name                           | Address                       | Status   | Version | Ciphersuite                 | Hash   | Signature | Verification                                 |
 | ------------------------------ | ----------------------------- | -------- | ------- | --------------------------- | ------ | --------- | -------------------------------------------- |

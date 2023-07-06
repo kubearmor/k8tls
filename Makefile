@@ -1,5 +1,5 @@
 build:
-	docker build -t accuknox/kubetls:latest .
+	docker build -t kubearmor/kubetls:latest .
 
 push:
-	docker push accuknox/kubetls:latest
+	docker push kubearmor/kubetls:latest
