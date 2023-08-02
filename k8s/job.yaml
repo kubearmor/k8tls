@@ -1,18 +1,18 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kubetls
+  name: k8tls
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kubetls-serviceact
-  namespace: kubetls
+  name: k8tls-serviceact
+  namespace: k8tls
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubetls-cr
+  name: k8tls-cr
 rules:
 - apiGroups: [""]
   resources: ["services"]
@@ -21,28 +21,28 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubetls-crb
+  name: k8tls-crb
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kubetls-cr
+  name: k8tls-cr
 subjects:
 - kind: ServiceAccount
-  name: kubetls-serviceact
-  namespace: kubetls
+  name: k8tls-serviceact
+  namespace: k8tls
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kubetls
-  namespace: kubetls
+  name: k8tls
+  namespace: k8tls
 spec:
   template:
     spec:
-      serviceAccountName: kubetls-serviceact
+      serviceAccountName: k8tls-serviceact
       containers:
-      - name: kubetls
-        image: accuknox/kubetls:latest
+      - name: k8tls
+        image: kubearmor/k8tls:latest
         command: ["./k8s_tlsscan"]
       restartPolicy: Never
   backoffLimit: 4
