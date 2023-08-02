@@ -1,4 +1,4 @@
-# TLS Inspector
+# k8tls
 
 Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
 
@@ -27,8 +27,8 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
 For k8s, the solution gets deployed as a job that scans the k8s service ports.
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/kubearmor/kubetls/main/k8s/job.yaml
-kubectl logs -n kubetls $(kubectl get pod -n kubetls -l job-name=kubetls -o name) -f
+kubectl apply -f https://raw.githubusercontent.com/kubearmor/k8tls/main/k8s/job.yaml
+kubectl logs -n k8tls $(kubectl get pod -n k8tls -l job-name=k8tls -o name) -f
 ```
 ```
 | Name                                                             | Address              | Status     | Version | Ciphersuite            | Hash   | Signature | Verification                                 |
@@ -58,7 +58,7 @@ Summary:
 ### Scan container environment
 
 ```
-docker run --rm -v $PWD/config:/home/kubetls/data kubearmor/kubetls --infile data/addr.list --csv data/out.csv
+docker run --rm -v $PWD/config:/home/k8tls/data kubearmor/k8tls --infile data/addr.list --csv data/out.csv
 
 | Name                           | Address                       | Status   | Version | Ciphersuite                 | Hash   | Signature | Verification                                 |
 | ------------------------------ | ----------------------------- | -------- | ------- | --------------------------- | ------ | --------- | -------------------------------------------- |
@@ -77,7 +77,7 @@ docker run --rm -v $PWD/config:/home/kubetls/data kubearmor/kubetls --infile dat
 ```
 > Note: The command assumes that the current folder contains `addr.list` file containing the list of addresses to scan.
 
-[![KubeTLS](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ.svg)](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ)
+[![k8tls](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ.svg)](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ)
 
 ## Roadmap
 * Validate based on SSL/TLS best practices.
