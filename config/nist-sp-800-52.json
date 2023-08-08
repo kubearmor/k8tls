@@ -1,0 +1,108 @@
+{
+    "cipher_suites": [
+        {
+            "cipher_suite": "TLS_AES_256_GCM_SHA384",
+            "versions": [
+                {
+                    "version": "TLSv1.3",
+                    "recommended": "high"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_AES_128_GCM_SHA256",
+            "versions": [
+                {
+                    "version": "TLSv1.3",
+                    "recommended": "high"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "medium"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "medium"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "low"
+                },
+                {
+                    "version": "TLSv1.1",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.0",
+                    "recommended": "not"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "low"
+                },
+                {
+                    "version": "TLSv1.1",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.0",
+                    "recommended": "not"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_RSA_WITH_AES_256_CBC_SHA",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.1",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.0",
+                    "recommended": "not"
+                }
+            ]
+        },
+        {
+            "cipher_suite": "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "versions": [
+                {
+                    "version": "TLSv1.2",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.1",
+                    "recommended": "not"
+                },
+                {
+                    "version": "TLSv1.0",
+                    "recommended": "not"
+                }
+            ]
+        }
+    ]
+}

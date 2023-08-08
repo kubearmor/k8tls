@@ -22,6 +22,12 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
 
 ## Getting Started
 
+### Dependencies
+* `tlsscan` depends on [jq](https://jqlang.github.io/jq/manual/)
+```
+sudo apt install jq
+```
+
 ### Scan k8s services
 
 For k8s, the solution gets deployed as a job that scans the k8s service ports.
