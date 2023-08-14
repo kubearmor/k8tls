@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8tls
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8tls-serviceact
+  namespace: k8tls
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8tls-cr
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8tls-crb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: k8tls-cr
+subjects:
+- kind: ServiceAccount
+  name: k8tls-serviceact
+  namespace: k8tls
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k8tls
+  namespace: k8tls
+spec:
+  template:
+    spec:
+      serviceAccountName: k8tls-serviceact
+      containers:
+      - name: k8tls
+        image: localhost/kubearmor/k8tls:latest
+        imagePullPolicy: Never
+        command: ["./k8s_tlsscan"]
+        volumeMounts:
+        - name: hostpath-volume
+          mountPath: /tmp
+      volumes:
+      - name: hostpath-volume
+        hostPath:
+          path: /tmp/k8tls
+      restartPolicy: Never
+  backoffLimit: 4

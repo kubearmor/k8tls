@@ -1,0 +1,45 @@
+name: ci-test-ginkgo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/ci-test-ginkgo.yml"
+
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/ci-test-ginkgo.yml"
+
+jobs:
+  build:
+    name: Auto-testing Framework
+    runs-on: ubuntu-latest
+
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "v1.20"
+      
+      - name: Setup a Kubernetes environment
+        run: ./.github/workflows/script/install_k3s.sh
+
+      - name: Prepare to Deploy k8tls
+        run: |
+          mkdir /tmp/k8tls
+          docker save kubearmor/k8tls:latest | sudo k3s ctr images import -
+       
+      - name: Test k8tls using Ginkgo
+        run: |
+          go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo
+          make
+        working-directory: ./tests
+        timeout-minutes: 30
+
