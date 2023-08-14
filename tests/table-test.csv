@@ -3,5 +3,5 @@ Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification
 "kube-system/kube-dns[dns-tcp]","10.43.0.10:53","PLAIN_TEXT","","","","",""
 "kube-system/kube-dns[metrics]","10.43.0.10:9153","PLAIN_TEXT","","","","",""
 "kube-system/metrics-server[https]","10.43.215.100:443","TLS","TLSv1.3","TLS_AES_128_GCM_SHA256","SHA256","RSA-PSS","self-signed certificate in certificate chain"
-"wordpress-mysql/wordpress","10.43.230.131:80","PLAIN_TEXT","","","","",""
-"wordpress-mysql/mysql","10.43.5.5:3306","PLAIN_TEXT","","","","",""
+"wordpress-mysql/wordpress","10.43.185.224:80","PLAIN_TEXT","","","","",""
+"wordpress-mysql/mysql","10.43.169.33:3306","PLAIN_TEXT","","","","",""

@@ -19,25 +19,47 @@ jobs:
   build:
     name: Auto-testing Framework
     runs-on: ubuntu-latest
-
-
+    env:
+      RUNTIME: containerd
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "v1.20"
       
-      - name: Setup a Kubernetes environment
-        run: ./.github/workflows/script/install_k3s.sh
+      - name: Create k3s cluster
+        run: ./.github/workflows/scripts/install_k3s.sh
 
-      - name: Prepare to Deploy k8tls
+      - name: Test connectivity
+        run: kubectl get pods -A
+
+      - name: Deploy wordpress-mysql
+        run: kubectl apply -f ./tests/res/wordpress-mysql-dep.yaml
+
+      - name: Building k8tls
+        run: make build
+
+      - name: check for docker 
+        run: docker images
+
+      - name: Deploy k8tls
         run: |
-          mkdir /tmp/k8tls
           docker save kubearmor/k8tls:latest | sudo k3s ctr images import -
-       
+          kubectl apply -f ./tests/res/test-k8tls.yaml
+          sleep 10
+
+
+      - name: Checking if /tmp can be read
+        run: ls /tmp
+
+      - name: Check k8tls is completed
+        run: kubectl get pods -A
+      - name: Checking if /tmp can be read
+        run: ls /tmp
       - name: Test k8tls using Ginkgo
         run: |
+          # mkdir /tmp/k8tls
           go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo
           make
         working-directory: ./tests
