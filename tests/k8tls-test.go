@@ -1,31 +1,14 @@
-package test
+package k8tlstest
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
-
-	// . "github.com/kubearmor/KubeArmor/tests/util"
+	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-var _ = BeforeSuite(func() {
-	// err := K8sApply([]string{"res/test-k8tls.yaml"})
-	// Expect(err).To(BeNil())
-	// install wordpress-mysql app
-	// err := K8sApply([]string{"res/test-k8tls.yaml"})
-	// Expect(err).To(BeNil())
-	// time.Sleep(5 * time.Second)
-
-})
-
-var _ = AfterSuite(func() {
-
-	// err := K8sDelete([]string{"res/test-k8tls.yaml"})
-	// Expect(err).To(BeNil())
-
-})
 
 func matchCSV(file1 string, file2 string) {
 	// Read the first CSV file
@@ -37,7 +20,6 @@ func matchCSV(file1 string, file2 string) {
 	file1Records, err := reader1.ReadAll()
 	Expect(err).NotTo(HaveOccurred())
 
-	// Read the second CSV file
 	file2Data, err := os.Open(file2)
 	Expect(err).NotTo(HaveOccurred())
 	defer file2Data.Close()
@@ -46,7 +28,6 @@ func matchCSV(file1 string, file2 string) {
 	file2Records, err := reader2.ReadAll()
 	Expect(err).NotTo(HaveOccurred())
 
-	// Determine the index of the "Address" column
 	addressColumnIndex := -1
 	for i, header := range file1Records[0] {
 		if header == "Address" {
@@ -59,21 +40,27 @@ func matchCSV(file1 string, file2 string) {
 	Expect(len(file1Records[0])).To(Equal(len(file2Records[0])))
 
 	for i := 0; i < len(file1Records[0]); i++ {
-		if i == addressColumnIndex {
-			continue // Skip comparing the "Address" column
-		}
+		// if i == addressColumnIndex {
+		// 	continue // Skip comparing the "Address" column
+		// }
 		Expect(file1Records[0][i]).To(Equal(file2Records[0][i]))
 	}
 
-	// Compare rows
 	Expect(len(file1Records)).To(Equal(len(file2Records)))
 
 	for i := 0; i < len(file1Records); i++ {
 		for j := 0; j < len(file1Records[i]); j++ {
 			if j == addressColumnIndex {
-				continue // Skip comparing the "Address" column
+				ipPortPattern := `^\d+\.\d+\.\d+\.\d+:\d+$`
+
+				// Check if both values match the IP:Port pattern
+				isMatch := regexp.MustCompile(ipPortPattern).MatchString(file1Records[i][j]) &&
+					regexp.MustCompile(ipPortPattern).MatchString(file2Records[i][j])
+				Expect(isMatch).To(BeTrue(), fmt.Sprintf("Address mismatch at row %d", i+1))
+			} else {
+				Expect(file1Records[i][j]).To(Equal(file2Records[i][j]))
 			}
-			Expect(file1Records[i][j]).To(Equal(file2Records[i][j]))
+
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package test
+package k8tlstest
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestTests(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Tests Suite")
+	RunSpecs(t, "K8tls Tests Suite")
 }
