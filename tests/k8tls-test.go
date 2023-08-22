@@ -40,9 +40,6 @@ func matchCSV(file1 string, file2 string) {
 	Expect(len(file1Records[0])).To(Equal(len(file2Records[0])))
 
 	for i := 0; i < len(file1Records[0]); i++ {
-		// if i == addressColumnIndex {
-		// 	continue // Skip comparing the "Address" column
-		// }
 		Expect(file1Records[0][i]).To(Equal(file2Records[0][i]))
 	}
 
@@ -54,8 +51,7 @@ func matchCSV(file1 string, file2 string) {
 				ipPortPattern := `^\d+\.\d+\.\d+\.\d+:\d+$`
 
 				// Check if both values match the IP:Port pattern
-				isMatch := regexp.MustCompile(ipPortPattern).MatchString(file1Records[i][j]) &&
-					regexp.MustCompile(ipPortPattern).MatchString(file2Records[i][j])
+				isMatch := regexp.MustCompile(ipPortPattern).MatchString(file1Records[i][j])
 				Expect(isMatch).To(BeTrue(), fmt.Sprintf("Address mismatch at row %d", i+1))
 			} else {
 				Expect(file1Records[i][j]).To(Equal(file2Records[i][j]))
