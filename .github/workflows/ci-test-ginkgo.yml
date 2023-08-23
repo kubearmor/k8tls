@@ -35,7 +35,9 @@ jobs:
         run: kubectl get pods -A
 
       - name: Deploy wordpress-mysql
-        run: kubectl apply -f ./tests/res/wordpress-mysql-dep.yaml
+        run: |
+          kubectl apply -f ./tests/res/wordpress-mysql-dep.yaml
+          kubectl wait --for=condition=ready --timeout=15m -n wordpress-mysql pod -l app=wordpress
 
       - name: Building k8tls
         run: make build
