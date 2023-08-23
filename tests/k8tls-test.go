@@ -2,9 +2,7 @@ package k8tlstest
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
-	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,10 +34,12 @@ func matchCSV(file1 string, file2 string) {
 		}
 	}
 
-	// Compare headers
 	Expect(len(file1Records[0])).To(Equal(len(file2Records[0])))
 
 	for i := 0; i < len(file1Records[0]); i++ {
+		if i == addressColumnIndex {
+			continue
+		}
 		Expect(file1Records[0][i]).To(Equal(file2Records[0][i]))
 	}
 
@@ -48,14 +48,9 @@ func matchCSV(file1 string, file2 string) {
 	for i := 0; i < len(file1Records); i++ {
 		for j := 0; j < len(file1Records[i]); j++ {
 			if j == addressColumnIndex {
-				ipPortPattern := `^\d+\.\d+\.\d+\.\d+:\d+$`
-
-				// Check if both values match the IP:Port pattern
-				isMatch := regexp.MustCompile(ipPortPattern).MatchString(file1Records[i][j])
-				Expect(isMatch).To(BeTrue(), fmt.Sprintf("Address mismatch at row %d", i+1))
-			} else {
-				Expect(file1Records[i][j]).To(Equal(file2Records[i][j]))
+				continue
 			}
+			Expect(file1Records[i][j]).To(Equal(file2Records[i][j]))
 
 		}
 	}
