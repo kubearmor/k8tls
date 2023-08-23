@@ -42,7 +42,7 @@ spec:
       serviceAccountName: k8tls-serviceact
       containers:
       - name: k8tls
-        image: localhost/kubearmor/k8tls:latest
+        image: kubearmor/k8tls:latest
         imagePullPolicy: Never
         command: ["./k8s_tlsscan"]
         volumeMounts:
