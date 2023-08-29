@@ -1,0 +1,61 @@
+name: ci-test-ginkgo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/ci-test-ginkgo.yml"
+
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/ci-test-ginkgo.yml"
+
+jobs:
+  build:
+    name: Auto-testing Framework
+    runs-on: ubuntu-latest
+    env:
+      RUNTIME: containerd
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "v1.20"
+      
+      - name: Create k3s cluster
+        run: ./.github/workflows/scripts/install_k3s.sh
+
+      - name: Test connectivity
+        run: kubectl get pods -A
+
+      - name: Deploy wordpress-mysql
+        run: |
+          kubectl apply -f ./tests/res/wordpress-mysql-dep.yaml
+          kubectl wait --for=condition=ready --timeout=15m -n wordpress-mysql pod -l app=wordpress
+
+      - name: Building k8tls
+        run: make build
+
+      - name: Deploy k8tls
+        run: |
+          docker save kubearmor/k8tls:latest | sudo k3s ctr images import -
+          kubectl apply -f ./tests/res/test-k8tls.yaml
+          sleep 10
+
+      - name: Check k8tls is completed
+        run: kubectl get pods -A
+
+      - name: Test k8tls using Ginkgo
+        run: |
+          # mkdir /tmp/k8tls
+          go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo
+          make
+        working-directory: ./tests
+        timeout-minutes: 30
+
