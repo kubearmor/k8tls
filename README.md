@@ -1,8 +1,8 @@
-# k8tls
+<img src="res/k8tls-logo.png" width="50%">
 
-Tool to scan/verify if the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
+Tool to scan/verify the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning.
 
-Our primary reason to work on this tool was to handle 5G Security Control checks that mandates use of TLS within 5G Control Plane.
+Our primary reason to work on this tool was to handle 5G Security Control checks that mandates use of TLS within 5G Control Plane. Since then, this tool has been used in the context of general k8s clusters to understand the security risk posture of exposed k8s service endpoints.
 
 ## Use-Cases
 * :lock: Check if the server port is TLS enabled or not.
