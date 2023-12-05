@@ -48,6 +48,7 @@ parse_cmdargs()
 	[[ -f $csvout ]] && rm -f $csvout
 	[[ "$summcsv" == "" ]] && summcsv="/tmp/summary.csv"
 	[[ -f $summcsv ]] && rm -f $summcsv
+	[[ "$JSON" != "" ]] && jsonout=$JSON
 }
 
 jsonreport()
