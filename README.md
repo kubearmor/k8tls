@@ -19,6 +19,7 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
   * :rocket: Scans control + data plane services in k8s in full auto pilot mode. No user-inputs needed.
   * :infinity: Integrate this in CI/CD pipeline to identify use of insecure ports early. Json report option is available.
   * :dart: No proxy or no sidecar implies no impact on runtime performance.
+* Scan for [Terrapin-SSH](https://terrapin-attack.com/) vulnerability
 
 ## Getting Started
 
@@ -63,7 +64,7 @@ Summary:
 ### Scan container environment
 
 ```
-docker run --rm -v $PWD/config:/home/k8tls/config kubearmor/k8tls --infile config/addr.list --csv data/out.csv
+docker run --rm -v $PWD/config:/home/k8tls/config kubearmor/k8tls --infile config/addr.list --csv config/out.csv
 ```
 ```
 
@@ -85,6 +86,202 @@ docker run --rm -v $PWD/config:/home/k8tls/config kubearmor/k8tls --infile confi
 > Note: The command assumes that the current folder contains `addr.list` file containing the list of addresses to scan.
 
 [![k8tls](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ.svg)](https://asciinema.org/a/r7iDki9n3tYX9NHuMiloTASwQ)
+
+## Scan for Terrapin SSH vulnerability
+
+> Pre-requisite: `apt-get install jq`
+
+1. Prepare the `ssh.list` file [ref](config/ssh.list) containing the list of ssh ports to scan. 
+2. Execute the k8tls tool with ssh.list as the input
+```
+docker run --rm -v $PWD:/home/k8tls/data kubearmor/k8tls --infile data/ssh.list --json data/ssh.json
+```
+3. Print the json report
+```
+cat ssh.json | jq .
+```
+
+<details> <summary>Sample config/ssh.json report output</summary>
+
+```json
+{
+  "app": {
+    "version": "v0.1"
+  },
+  "endpoints": [
+    {
+      "svc": "open-horizon-edge-vm",
+      "host": "172.174.240.192",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.5",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "svc": "jfrog-registry-vm",
+      "host": "4.242.4.41",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_7.6p1 Ubuntu-4ubuntu0.7+esm2",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "false",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "svc": "jumphost",
+      "host": "172.208.81.244",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.5",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "svc": "nessus-vm",
+      "host": "20.124.83.23",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.10",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "svc": "ai-team-vm",
+      "host": "74.249.73.76",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.5",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "svc": "performance-test-vm",
+      "host": "172.208.76.73",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.7",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "false",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "svc": "devops-vm",
+      "host": "20.109.50.235",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.5",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "svc": "harbor-accuknox",
+      "host": "172.190.166.169",
+      "port": "22",
+      "finding": [
+        {
+          "plugin": "terrapin-ssh",
+          "title": "terrapin ssh server attack",
+          "description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+          "link": "https://terrapin-attack.com/",
+          "banner": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.10",
+          "supportsChaCha20": "true",
+          "supportsCbcEtm": "false",
+          "supportsStrictKex": "true",
+          "severity": "high",
+          "remediationEstEffort": "medium",
+          "solution": "Both SSH client and server needs to be patched to fix the exploit.",
+          "status": "OK"
+        }
+      ]
+    }
+  ]
+}
+```
+
+</details>
 
 ## Roadmap
 * Validate based on SSL/TLS best practices.
