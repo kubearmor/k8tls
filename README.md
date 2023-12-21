@@ -63,7 +63,7 @@ Summary:
 ### Scan container environment
 
 ```
-docker run --rm -v $PWD/config:/home/k8tls/data kubearmor/k8tls --infile data/addr.list --csv data/out.csv
+docker run --rm -v $PWD/config:/home/k8tls/config kubearmor/k8tls --infile config/addr.list --csv data/out.csv
 ```
 ```
 
