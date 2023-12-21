@@ -30,7 +30,7 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
 kubectl apply -f https://raw.githubusercontent.com/kubearmor/k8tls/main/k8s/job.yaml
 ```
 
-2. Get the report
+2. Get the report (once the job is Completed)
 ```
 kubectl logs -n k8tls $(kubectl get pod -n k8tls -l job-name=k8tls -o name) -f
 ```
@@ -64,6 +64,8 @@ Summary:
 
 ```
 docker run --rm -v $PWD/config:/home/k8tls/data kubearmor/k8tls --infile data/addr.list --csv data/out.csv
+```
+```
 
 | Name                           | Address                       | Status   | Version | Ciphersuite                 | Hash   | Signature | Verification                                 |
 | ------------------------------ | ----------------------------- | -------- | ------- | --------------------------- | ------ | --------- | -------------------------------------------- |

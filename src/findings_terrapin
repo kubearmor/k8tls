@@ -13,7 +13,7 @@
 TPJSON=/tmp/tpin.json
 terrapin_scan()
 {
-	TPIN=/home/rahul/go/bin/Terrapin-Scanner
+	TPIN=Terrapin_Scanner
 	timeout 5s $TPIN --connect $SVC_Address --json > $TPJSON
 	[[ $? -ne 0 ]] && status="ERROR" && return
 	for((i=0;;i++)); do
