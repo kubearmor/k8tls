@@ -45,12 +45,12 @@ parse_cmdargs()
 		esac
 	done
 	[[ "$infile" == "" ]] && echo "No address list provided, use --infile <file>" && exit 2
-	[[ "$csvout" == "" ]] && csvout="/tmp/out.csv"
+	[[ "$csvout" == "" ]] && csvout="/tmp/k8tls_out.csv"
 	[[ -f $csvout ]] && rm -f $csvout
-	[[ "$summcsv" == "" ]] && summcsv="/tmp/summary.csv"
+	[[ "$summcsv" == "" ]] && summcsv="/tmp/k8tls_summary.csv"
 	[[ -f $summcsv ]] && rm -f $summcsv
 	[[ "$JSON" != "" ]] && jsonout=$JSON
-	[[ "$jsonout" == "" ]] && jsonout="/tmp/k8tls.json"
+	[[ "$jsonout" == "" ]] && jsonout="/tmp/k8tls_report.json"
 }
 
 csvheader()
@@ -96,22 +96,28 @@ jsonendpoint_ftr()
 EOF
 }
 
+TMPJSONSEC=/tmp/k8tls_json_section.json
 . $BDIR/findings_tls
 . $BDIR/findings_terrapin
 scansvc()
 {
-	finding_got=0
 	jsonendpoint_hdr
-	declare -F | grep "k8tls_" | sort | awk '{print $3}' > /tmp/fnlist.txt
+	TMPFNLIST=/tmp/k8tls_fnlist.txt
+	declare -F | grep "k8tls_" | sort | awk '{print $3}' > $TMPFNLIST
+	cnt=0
 	while read fn; do
 		IFS="_" read -r -a tok <<< "$fn"
 		[[ $SVC_Scanners != *"${tok[1]}"* ]] && continue
 		echo -en "\texecuting [$fn] tool=${tok[1]}...\n"
-		[[ $finding_got -ne 0 ]] && echo "," >> $jsonout
 		status="OK"
-		finding_got=1
 		$fn
-	done < /tmp/fnlist.txt
+		if [ -f $TMPJSONSEC ]; then
+			[[ $cnt -gt 0 ]] && echo "," >> $jsonout
+			cat $TMPJSONSEC >> $jsonout
+			rm -f $TMPJSONSEC
+		fi
+		((cnt++))
+	done < $TMPFNLIST
 	jsonendpoint_ftr
 }
 
@@ -190,3 +196,4 @@ main()
 # Processing starts here
 parse_cmdargs "$@"
 main
+rm -f /tmp/k8tls_*

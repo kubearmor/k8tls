@@ -29,7 +29,7 @@ k8tls_terrapin_scanssh()
 {
 	terrapin_scan
 	[[ "$TP_Vulnerable" == "true" ]] && status="FAIL"
-	cat << EOF >> $jsonout
+	cat << EOF >> $TMPJSONSEC
 				{
 					"plugin": "terrapin-ssh",
 					"title": "terrapin ssh server attack",
