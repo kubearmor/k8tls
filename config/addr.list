@@ -8,5 +8,5 @@ revoked.badssl.com:443 BadSSL
 pinning-test.badssl.com:443 BadSSL
 dh480.badssl.com:443 BadSSL
 isunknownaddress.com:12345 LocalTest
-localhost:9090
-localhost:22 namespace:deployment/wordpress
+localhost:9090 webserver
+localhost:22 localssh

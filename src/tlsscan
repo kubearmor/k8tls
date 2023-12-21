@@ -1,5 +1,6 @@
 #!/bin/bash
 
+BDIR=`dirname $0`
 chk_cmd()
 {
 	if ! command -v $1 &>/dev/null; then
@@ -49,67 +50,15 @@ parse_cmdargs()
 	[[ "$summcsv" == "" ]] && summcsv="/tmp/summary.csv"
 	[[ -f $summcsv ]] && rm -f $summcsv
 	[[ "$JSON" != "" ]] && jsonout=$JSON
+	[[ "$jsonout" == "" ]] && jsonout="/tmp/k8tls.json"
 }
 
-jsonreport()
-{
-	[[ "$jsonout" == "" ]] && return
-	if [ -f "$jsonout" ]; then
-		echo -en "\t},\n" >> $jsonout
-	else
-		echo -en "[\n" > $jsonout
-	fi
-	cat << EOF >> $jsonout
-	{
-		"Name": "$TLS_Name",
-		"Address": "$TLS_Address",
-		"Status": "$TLS_Status",
-		"Protocol_version": "$TLS_Protocol_version",
-		"Ciphersuite": "$TLS_Ciphersuite",
-		"Hash_used": "$TLS_Hash_used",
-		"Peer_certificate": "$TLS_Peer_certificate",
-		"Server_Temp_Key": "$TLS_Server_Temp_Key",
-		"Signature_type": "$TLS_Signature_type",
-		"Verification": "$TLS_Verification"
-EOF
-}
-
-jsontrailer()
-{
-	[[ ! -f "$jsonout" ]] && return
-	echo -en "\n\t}\n]" >> $jsonout
-}
-
-csvreport()
+csvheader()
 {
 	[[ "$csvout" == "" ]] && return
 	if [ ! -f "$csvout" ]; then
 		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification" > $csvout
 	fi
-	cat << EOF >> $csvout
-"$TLS_Name","$TLS_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification"
-EOF
-}
-
-opensslscan()
-{
-	tmp=/tmp/tls.out
-	rm -f $tmp 2>/dev/null
-	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$TLS_Address" -brief < /dev/null 2>$tmp
-#	echo "ret=$ret"
-#	cat $tmp
-	conn_estd=0
-	while read line; do
-		[[ "$line" == "CONNECTION ESTABLISHED" ]] && conn_estd=1
-		[[ $conn_estd -ne 1 ]] && continue
-		[[ $line != *:* ]] && continue
-		key=${line/:*/}
-		val=${line/*: /}
-		key=${key// /_}
-		printf -v "TLS_$key" '%s' "$val"
-		TLS_Status="TLS"
-	done < $tmp
-	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
 }
 
 unsetvars()
@@ -118,19 +67,52 @@ unsetvars()
 	varlist=`set | grep "^TLS_" | sed 's/=.*//g'`
 	varlist=`echo $varlist`
 	unset $varlist
+
+	varlist=`set | grep "^TP_" | sed 's/=.*//g'`
+	varlist=`echo $varlist`
+	unset $varlist
 }
 
-scantls()
+jsonendpoint_hdr()
 {
-	TLS_Status="PLAIN_TEXT"
-	nc -w 1 -z ${TLS_Address/:/ }
-	case "$?" in
-		0) opensslscan ;;
-		*) TLS_Status="CONNFAIL" ;;
-	esac
+	ns=""
+	[[ "$SVC_Namespace" != "" ]] && ns="\"namespace\": \"$SVC_Namespace\","
+	[[ $endpoint_cnt -gt 0 ]] && echo "," >> $jsonout
+	cat << EOF >> $jsonout
+		{
+			$ns
+			"svc": "$SVC_Name",
+			"host": "$SVC_Host",
+			"port": "$SVC_Port",
+			"finding": [
+EOF
+}
 
-	jsonreport
-	csvreport
+jsonendpoint_ftr()
+{
+	cat << EOF >> $jsonout
+			]
+		}
+EOF
+}
+
+. $BDIR/findings_tls
+. $BDIR/findings_terrapin
+scansvc()
+{
+	finding_got=0
+	jsonendpoint_hdr
+	declare -F | grep "k8tls_" | sort | awk '{print $3}' > /tmp/fnlist.txt
+	while read fn; do
+		IFS="_" read -r -a tok <<< "$fn"
+		[[ $SVC_Scanners != *"${tok[1]}"* ]] && continue
+		echo -en "\texecuting [$fn] tool=${tok[1]}...\n"
+		[[ $finding_got -ne 0 ]] && echo "," >> $jsonout
+		status="OK"
+		finding_got=1
+		$fn
+	done < /tmp/fnlist.txt
+	jsonendpoint_ftr
 }
 
 getsummary()
@@ -160,18 +142,47 @@ getsummary()
 	tabled --in $summcsv
 }
 
+jsonheader()
+{
+	cat << EOF > $jsonout
+{
+	"app": {
+		"version": "v0.1"
+	},
+	"endpoints": [
+EOF
+}
+
+jsonfooter()
+{
+	cat << EOF >> $jsonout
+	]
+}
+EOF
+	echo "json report generated at [$jsonout]"
+}
+
 main()
 {
+	csvheader
+	jsonheader
+	endpoint_cnt=0
 	while read line; do
 		[[ $line == \#* ]] && continue
 		echo "checking [$line]..."
 		unsetvars
-		TLS_Address=${line/ */}
-		TLS_Name=${line/* /}
-		scantls
+		IFS=" " read -r -a arr <<< "$line"
+		SVC_Address=${arr[0]}
+		SVC_Host=${SVC_Address/:*}
+		SVC_Port=${SVC_Address/*:}
+		SVC_Name=${arr[1]}
+		SVC_Scanners=${arr[2]}
+		[[ "$SVC_Scanners" == "" ]] && SVC_Scanners="tls"
+		scansvc
+		((endpoint_cnt++))
 	done < $infile
-	jsontrailer
-	[[ -f "$csvout" ]] && tabled --in $csvout --config tabled.yaml
+	jsonfooter
+	[[ -f "$csvout" ]] && tabled --in $csvout --config ${TABLED_YAML-tabled.yaml}
 	echo ;
 	getsummary
 }

@@ -24,12 +24,17 @@ Our primary reason to work on this tool was to handle 5G Security Control checks
 
 ### Scan k8s services
 
-For k8s, the solution gets deployed as a job that scans the k8s service ports.
+1. Deploy the k8tls job
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/kubearmor/k8tls/main/k8s/job.yaml
+```
+
+2. Get the report
+```
 kubectl logs -n k8tls $(kubectl get pod -n k8tls -l job-name=k8tls -o name) -f
 ```
+
 ```
 | Name                                                             | Address              | Status     | Version | Ciphersuite            | Hash   | Signature | Verification                                 |
 | ---------------------------------------------------------------- | -------------------- | ---------- | ------- | ---------------------- | ------ | --------- | -------------------------------------------- |

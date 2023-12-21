@@ -1,0 +1,8 @@
+172.174.240.192:22 open-horizon-edge-vm terrapin
+4.242.4.41:22 jfrog-registry-vm terrapin
+172.208.81.244:22 jumphost terrapin
+20.124.83.23:22 nessus-vm terrapin
+74.249.73.76:22 ai-team-vm terrapin
+172.208.76.73:22 performance-test-vm terrapin
+20.109.50.235:22 devops-vm terrapin
+172.190.166.169:22 harbor-accuknox terrapin

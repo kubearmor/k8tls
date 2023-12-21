@@ -1,0 +1,50 @@
+#!/bin/bash
+
+: '
+{
+	"Banner": "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.4",
+	"SupportsChaCha20": true,
+	"SupportsCbcEtm": false,
+	"SupportsStrictKex": false,
+	"Vulnerable": true
+}
+'
+
+TPJSON=/tmp/tpin.json
+terrapin_scan()
+{
+	TPIN=/home/rahul/go/bin/Terrapin-Scanner
+	timeout 5s $TPIN --connect $SVC_Address --json > $TPJSON
+	[[ $? -ne 0 ]] && status="ERROR" && return
+	for((i=0;;i++)); do
+		key=`cat $TPJSON | jq keys | jq -r ".[$i]"`
+		[[ "$key" == "null" ]] && break
+		[[ "$key" == "" ]] && break
+		val=`cat $TPJSON | jq -r ".$key"`
+		printf -v "TP_$key" '%s' "$val"
+	done
+}
+
+k8tls_terrapin_scanssh()
+{
+	terrapin_scan
+	[[ "$TP_Vulnerable" == "true" ]] && status="FAIL"
+	cat << EOF >> $jsonout
+				{
+					"plugin": "terrapin-ssh",
+					"title": "terrapin ssh server attack",
+					"description": "The exploit can allow an attacker to downgrade the connection security by truncating the extension negotiation message (RFC8308) from the transcript. The truncation can lead to using less secure client authentication algorithms and deactivating specific countermeasures against keystroke timing attacks.",
+					"link": "https://terrapin-attack.com/",
+					"banner": "$TP_Banner",
+					"supportsChaCha20": "$TP_SupportsChaCha20",
+					"supportsCbcEtm": "$TP_SupportsCbcEtm",
+					"supportsStrictKex": "$TP_SupportsStrictKex",
+					"severity": "high",
+					"remediationEstEffort": "medium",
+					"solution": "Both SSH client and server needs to be patched to fix the exploit.",
+					"status": "$status"
+				}
+EOF
+	rm $TPJSON
+}
+

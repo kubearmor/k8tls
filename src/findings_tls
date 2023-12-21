@@ -1,0 +1,143 @@
+#!/bin/bash
+
+opensslscan()
+{
+	tmp=/tmp/tls.out
+	rm -f $tmp 2>/dev/null
+	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$SVC_Address" -brief < /dev/null 2>$tmp
+#	echo "ret=$ret"
+#	cat $tmp
+	conn_estd=0
+	while read line; do
+		[[ "$line" == "CONNECTION ESTABLISHED" ]] && conn_estd=1
+		[[ $conn_estd -ne 1 ]] && continue
+		[[ $line != *:* ]] && continue
+		key=${line/:*/}
+		val=${line/*: /}
+		key=${key// /_}
+		printf -v "TLS_$key" '%s' "$val"
+		TLS_Status="TLS"
+	done < $tmp
+	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
+}
+
+tls_jsonreport()
+{
+	tls_chk_insecure_port
+	cat << EOF >> $jsonout
+				{
+					"Name": "$SVC_Name",
+					"Address": "$SVC_Address",
+					"Status": "$TLS_Status",
+					"Protocol_version": "$TLS_Protocol_version",
+					"Ciphersuite": "$TLS_Ciphersuite",
+					"Hash_used": "$TLS_Hash_used",
+					"Peer_certificate": "$TLS_Peer_certificate",
+					"Server_Temp_Key": "$TLS_Server_Temp_Key",
+					"Signature_type": "$TLS_Signature_type",
+					"Verification": "$TLS_Verification"
+				}
+EOF
+}
+
+tls_csvreport()
+{
+	[[ "$csvout" == "" ]] && return
+	cat << EOF >> $csvout
+"$SVC_Name","$SVC_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification"
+EOF
+}
+
+do_openssl_scan()
+{
+	[[ "$TLS_Status" != "" ]] && return	#already scanned
+	TLS_Status="PLAIN_TEXT"
+	nc -w 1 -z ${SVC_Address/:/ }
+	case "$?" in
+		0) opensslscan ;;
+		*) TLS_Status="CONNFAIL" ;;
+	esac
+	tls_csvreport
+}
+
+k8tls_tls_00chktls()
+{
+	do_openssl_scan
+	[[ "$TLS_Status" != "TLS" ]] && status="FAIL"
+	cat << EOF >> $jsonout
+				{
+					"plugin": "tls-security",
+					"title": "use of TLS security",
+					"compliance": "NIST.SP.800-52",
+					"control-id": "2.1",
+					"description": "It is mandatory for TLS to be enabled for all network communications including east-west traffic.",
+					"link": "https://csrc.nist.gov/news/2019/nist-publishes-sp-800-52-revision-2",
+					"severity": "critical",
+					"remediationEstEffort": "medium",
+					"solution": "enable TLS or transport security on the port.",
+					"status": "$status"
+				}
+EOF
+}
+
+k8tls_tls_01checkversion()
+{
+	do_openssl_scan
+	[[ "$TLS_Status" != "TLS" ]] && finding_got=0 && return	# no finding
+	if [ "$TLS_Protocol_version" != "TLSv1.2" ] || [ "$TLS_Protocol_version" != "TLSv1.3" ]; then
+		status="FAIL"
+	fi
+	cat << EOF >> $jsonout
+				{
+					"plugin": "tls-version",
+					"title": "use secure TLS protocol version",
+					"compliance": "NIST.SP.800-52",
+					"control-id": "3.1",
+					"description": "Using TLS >=v1.2 is mandatory for all applications. Version currently in use is $TLS_Protocol_version",
+					"link": "https://csrc.nist.gov/news/2019/nist-publishes-sp-800-52-revision-2",
+					"severity": "critical",
+					"remediationEstEffort": "low",
+					"solution": "enable TLS >=v1.2 transport security on the port.",
+					"status": "$status"
+				}
+EOF
+}
+
+k8tls_tls_02certificateChecks()
+{
+	do_openssl_scan
+	[[ "$TLS_Status" != "TLS" ]] && finding_got=0 && return	# no finding
+	if [ "$TLS_Verification" != "" ]; then
+		status="FAIL"
+		solution="Update certificate signed from trusted CA."
+		finding="$TLS_Verification"
+		severity="low"
+	fi
+	case "$TLS_Verification" in
+		"certificate has expired")
+			solution="renew x.509 certificate"
+			finding="TLS certificate has expired. Renew the certificate."
+			severity="critical"
+			;;
+		"self-signed certificate")
+			solution="Use certificates signed by approved Certificates Authority (CA)."
+			finding="Self-signed certificates have the risk of MITM attacks."
+			severity="medium"
+			;;
+	esac
+	cat << EOF >> $jsonout
+				{
+					"plugin": "tls-certificate-check",
+					"title": "check for TLS certificate best practices",
+					"compliance": "NIST.SP.800-52",
+					"control-id": "3.3",
+					"description": "$finding",
+					"link": "https://csrc.nist.gov/news/2019/nist-publishes-sp-800-52-revision-2",
+					"severity": "$severity",
+					"remediationEstEffort": "low",
+					"solution": "$solution",
+					"status": "$status"
+				}
+EOF
+}
+
