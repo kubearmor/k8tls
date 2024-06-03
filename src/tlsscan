@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BDIR=`dirname $0`
+FIPS_140_3_APPROVED_CIPHERS="config/fips-140-3.json"
 chk_cmd()
 {
 	if ! command -v $1 &>/dev/null; then
@@ -57,7 +58,7 @@ csvheader()
 {
 	[[ "$csvout" == "" ]] && return
 	if [ ! -f "$csvout" ]; then
-		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification" > $csvout
+		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification,FIPS_140_3_Compliant" > $csvout
 	fi
 }
 
@@ -128,12 +129,14 @@ getsummary()
 		"self-signed certificate"
 		"insecure port"
 		"connection failure"
+		"FIPS 140-3 non-compliant"
 	)
 	regex_arr=( 
 		"certificate has expired"
 		"self-signed certificate"
 		"PLAIN_TEXT"
 		"CONNFAIL"
+		"No"
 	)
 	echo "Status,Count" > $summcsv
 	for((i=0;;i++)); do

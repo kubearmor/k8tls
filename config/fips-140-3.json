@@ -1,0 +1,91 @@
+{
+    "TLS_versions": [
+        {
+            "TLS_version": "TLSv1.0_1.1",
+            "cipher_suites": [
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"
+                }
+            ]
+        },
+        {
+            "TLS_version": "TLSv1.2",
+            "cipher_suites": [
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_CCM"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_CCM"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384"
+                },
+                {
+                    "cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256"
+                }
+            ]
+        },
+        {
+            "TLS_version": "TLSv1.3",
+            "cipher_suites": [
+                {
+                    "cipher_suite": "TLS_AES_256_GCM_SHA384"
+                },
+                {
+                    "cipher_suite": "TLS_AES_128_GCM_SHA256"
+                },
+                {
+                    "cipher_suite": "TLS_AES_128_CCM_SHA256"
+                },
+                {
+                    "cipher_suite": "TLS_AES_128_CCM_8_SHA256"
+                }
+            ]
+        }
+    ]
+}
