@@ -5,8 +5,6 @@ opensslscan()
 	tmp=/tmp/tls.out
 	rm -f $tmp 2>/dev/null
 	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$SVC_Address" -brief < /dev/null 2>$tmp
-#	echo "ret=$ret"
-#	cat $tmp
 	conn_estd=0
 	while read line; do
 		[[ "$line" == "CONNECTION ESTABLISHED" ]] && conn_estd=1
@@ -18,6 +16,7 @@ opensslscan()
 		printf -v "TLS_$key" '%s' "$val"
 		TLS_Status="TLS"
 	done < $tmp
+	fips_compliance_check
 	[[ "$TLS_Verification_error" != "" ]] && TLS_Verification="$TLS_Verification_error"
 }
 
@@ -25,7 +24,7 @@ tls_csvreport()
 {
 	[[ "$csvout" == "" ]] && return
 	cat << EOF >> $csvout
-"$SVC_Name","$SVC_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification"
+"$SVC_Name","$SVC_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification","$FIPS_140_3_Compliant"
 EOF
 }
 
@@ -122,3 +121,86 @@ k8tls_tls_02certificateChecks()
 EOF
 }
 
+fips_compliance_check()
+{
+	do_openssl_scan
+	if [ "$TLS_Status" != "TLS" ]; then
+		control_id="3.2"
+		description="Secure TLS protocol is required to meet the requirements of FIPS-140-3 compliant encryption."
+		severity="critical"
+		solution="Implement secure TLS protocol (TLS >= v1.2)"
+		FIPS_140_3_Compliant="No"
+		
+		appendSpec
+		return
+	fi
+
+	control_id="3.3"
+	description="Approved ciphers to meet the requirements of FIPS-140-3 compliant encryption."
+	severity="medium"
+
+	case "$TLS_Protocol_version" in
+	"TLSv1.1"|"TLSv1.0")
+		ciphers="`jq '.TLS_versions[0].cipher_suites[] | join(", ")' $FIPS_140_3_APPROVED_CIPHERS`"
+		solution="use FIPS-approved ciphers: [`echo $ciphers | sed 's/\"//g' | sed 's/ /, /g; s/, $//'`]"
+		FIPS_140_3_Compliant="No"
+
+		result=$(jq ".TLS_versions[0].cipher_suites[] | select(.cipher_suite == \"$TLS_Ciphersuite\") | any" "$FIPS_140_3_APPROVED_CIPHERS")
+		
+		[[ $result == "true" ]] && {
+			FIPS_140_3_Compliant="Yes"
+			description="Using Secure TLS protocol and FIPS-approved Ciphers. FIPS-approved ciphersuite in use is $TLS_Ciphersuite"
+			solution="NA"
+		}
+		;;
+
+	"TLSv1.2")
+		ciphers="`jq '.TLS_versions[1].cipher_suites[] | join(", ")' $FIPS_140_3_APPROVED_CIPHERS`"
+		solution="use FIPS-approved ciphers: [`echo $ciphers | sed 's/\"//g' | sed 's/ /, /g; s/, $//'`]"
+		FIPS_140_3_Compliant="No"
+
+		result=$(jq ".TLS_versions[1].cipher_suites[] | select(.cipher_suite == \"$TLS_Ciphersuite\") | any" "$FIPS_140_3_APPROVED_CIPHERS")
+				
+		[[ $result == "true" ]] && {
+			FIPS_140_3_Compliant="Yes"
+			description="Using Secure TLS protocol and FIPS-approved Ciphers. FIPS-approved ciphersuite in use is $TLS_Ciphersuite"
+			solution="NA"
+		}
+		;;
+
+	"TLSv1.3")
+		ciphers="`jq '.TLS_versions[2].cipher_suites[] | join(", ")' $FIPS_140_3_APPROVED_CIPHERS`"
+		solution="use FIPS-approved ciphers: [`echo $ciphers | sed 's/\"//g' | sed 's/ /, /g; s/, $//'`]"
+		FIPS_140_3_Compliant="No"
+
+		result=$(jq ".TLS_versions[2].cipher_suites[] | select(.cipher_suite == \"$TLS_Ciphersuite\") | any" "$FIPS_140_3_APPROVED_CIPHERS")
+
+		[[ $result == "true" ]] && {
+			FIPS_140_3_Compliant="Yes"
+			description="Using Secure TLS protocol and FIPS-approved Ciphers. FIPS-approved ciphersuite in use is $TLS_Ciphersuite"
+			solution="NA"
+		}
+		;;
+	esac
+	
+	appendSpec
+}
+
+appendSpec()
+{
+	cat << EOF >> $TMPJSONSEC
+				{
+					"plugin": "fips-140-3-compliance-check",
+					"title": "FIPS 140-3 compliant encryption check",
+					"compliance": "FIPS.140.3",
+					"control-id": "$control_id",
+					"cipherSuiteInUse": "$TLS_Ciphersuite",
+					"description": "$description",
+					"link": "https://www.gsa.gov/system/files?file=SSL-TLS-Implementation-%5BCIO-IT-Security-14-69-Rev-7%5D-06-12-2023.pdf",
+					"severity": "$severity",
+					"remediationEstEffort": "medium",
+					"solution": "$solution",
+					"compliant": "$FIPS_140_3_Compliant"
+				},
+EOF
+}
