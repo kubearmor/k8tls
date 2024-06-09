@@ -136,7 +136,7 @@ getsummary()
 		"self-signed certificate"
 		"PLAIN_TEXT"
 		"CONNFAIL"
-		"No"
+		"FAIL"
 	)
 	echo "Status,Count" > $summcsv
 	for((i=0;;i++)); do
