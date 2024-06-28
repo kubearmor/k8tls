@@ -64,9 +64,9 @@ k8tls_tls_01checkversion()
 {
 	do_openssl_scan
 	[[ "$TLS_Status" != "TLS" ]] && return	# no finding
-	if [ "$TLS_Protocol_version" != "TLSv1.2" ] || [ "$TLS_Protocol_version" != "TLSv1.3" ]; then
+	if [ "$TLS_Protocol_version" != "TLSv1.2" ] && [ "$TLS_Protocol_version" != "TLSv1.3" ]; then
 		status="FAIL"
-	fi
+	
 	cat << EOF >> $TMPJSONSEC
 				{
 					"plugin": "tls-version",
@@ -81,6 +81,7 @@ k8tls_tls_01checkversion()
 					"status": "$status"
 				}
 EOF
+  fi
 }
 
 k8tls_tls_02certificateChecks()
