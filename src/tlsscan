@@ -25,6 +25,7 @@ Options:
 -f | --infile input file containing list of addresses (mandatory)
 --json output json file
 --csv output csv file
+--compact-json output json file with no newline characters
 -h | --help
 EOF
 	exit 1
@@ -32,7 +33,7 @@ EOF
 
 parse_cmdargs()
 {
-	OPTS=`getopt -o f:h --long csv:,infile:,json:,help -n 'parse-options' -- "$@"`
+	OPTS=`getopt -o f:h --long csv:,infile:,json:,compact-json,help -n 'parse-options' -- "$@"`
 	[[ $? -ne 0 ]] && usage
 	eval set -- "$OPTS"
 	while true; do
@@ -40,6 +41,7 @@ parse_cmdargs()
 			-f | --infile ) infile="$2"; [[ ! -f $infile ]] && echo "$infile file not found" && exit 2; shift 2;;
 			--json ) jsonout="$2"; [[ -f $jsonout ]] && rm -f $jsonout; shift 2;;
 			--csv ) csvout="$2"; shift 2;;
+			--compact-json ) compact_json_out="/tmp/compact_report.json"; shift 1;;
 			-h | --help ) usage; shift 1;;
 			-- ) shift; break ;;
 			* ) break ;;
@@ -192,6 +194,9 @@ main()
 	done < $infile
 	jsonfooter
 	[[ -f "$csvout" ]] && tabled --in $csvout --config ${TABLED_YAML-tabled.yaml}
+	if [[ -n "$compact_json_out" && -f "$jsonout" ]]; then
+    	jq -c . $jsonout > $compact_json_out
+  	fi
 	echo ;
 	getsummary
 }
