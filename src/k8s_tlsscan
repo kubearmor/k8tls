@@ -42,4 +42,4 @@ while read -r line; do
 	IFS=' '
 done < <(kubectl get svc --no-headers -A -o=custom-columns='NS:.metadata.namespace,NAME:.metadata.name,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort')
 
-$BDIR/tlsscan -f $ADDRLIST
+$BDIR/tlsscan --infile $ADDRLIST --compact-json
