@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o pipefail
+
 opensslscan()
 {
 	tmp=/tmp/tls.out
@@ -24,7 +26,7 @@ tls_csvreport()
 {
 	[[ "$csvout" == "" ]] && return
 	cat << EOF >> $csvout
-"$SVC_Name","$SVC_Address","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification","$FIPS_140_3_Compliant"
+"$SVC_Name","$SVC_Address","$SVC_Type","$TLS_Status","$TLS_Protocol_version","$TLS_Ciphersuite","$TLS_Hash_used","$TLS_Signature_type","$TLS_Verification","$FIPS_140_3_Compliant"
 EOF
 }
 
@@ -190,6 +192,53 @@ fips_compliance_check()
 	esac
 	
 	appendSpec
+}
+
+k8tls_tls_03exposedPorts() {
+	if [ "$SVC_Type" == "NodePort" ]; then
+		status="PASS"
+		clusterName=$(curl -s http://169.254.169.254/latest/user-data | grep -E '^/etc/eks/bootstrap\.sh\s+([^\s]+)' | cut -d' ' -f2 2> /dev/null)
+		securityGroups=$(curl -s http://169.254.169.254/latest/meta-data/security-groups 2> /dev/null)
+		MAC=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/ | head -n 1 2> /dev/null)
+		securityGroupId=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/${MAC}/security-group-ids 2> /dev/null)
+		vpcId=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/${MAC}/vpc-id 2> /dev/null)
+		subNet=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/${MAC}/subnet-id 2> /dev/null)
+
+		if [[ -z "$clusterName" || -z "$securityGroups" || -z "$MAC" || -z "$securityGroupId" || -z "$vpcId" || -z "$subNet" ]]; then
+    		echo "One or more fields are empty. Skipping exposedPorts check..."
+			return
+    		# exit 1
+		fi
+
+		# Use parameter expansion to split the SVC_Name
+		namespace="${SVC_Name%%/*}"
+		name="${SVC_Name##*/}"
+		
+		nodePortValue=$(kubectl -n "${namespace}" get svc "${name}" -o=custom-columns='NODEPORT:.spec.ports[*].nodePort' | tail -1)
+		isExposedPort=$(aws ec2 describe-security-group-rules | jq ".SecurityGroupRules[] | select(.IsEgress == false and .ToPort == $nodePortValue)")
+		if [[ -z "${isExposedPort}" ]]; then
+			return
+		fi
+		
+		cat << EOF >> $TMPJSONSEC
+				{
+					"plugin": "exposed-ports",
+					"title": "Publicly exposed ports",
+					"description": "Publicly exposed ports increase security risks. Disable unnecessary ports to protect systems from unauthorized access."
+					"severity": "critical",
+					"remediationEstEffort": "medium",
+					"solution": "Disable publicly exposed ports",
+					"status": "$status",
+					"clusterName": "$clusterName",
+					"securityGroups": "$securityGroups",
+					"securityGroupId": "$securityGroupId",
+					"vpcId": "$vpcId",
+					"subNet": "$subNet",
+					"serviceNamespaceAndName": "$SVC_Name",
+					"exposedPort": "$nodePortValue"
+				}
+EOF
+	fi
 }
 
 appendSpec()

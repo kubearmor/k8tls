@@ -10,8 +10,11 @@ LABEL name="k8tls" \
       description="Tool to scan/verify the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning."
 
 RUN microdnf -y update && \
-    microdnf -y install --nodocs --setopt=install_weak_deps=0 --setopt=keepcache=0 shadow-utils openssl ca-certificates nmap jq tar gzip util-linux && \
-    microdnf clean all
+    microdnf -y install --nodocs --setopt=install_weak_deps=0 --setopt=keepcache=0 shadow-utils openssl ca-certificates nmap jq tar unzip gzip util-linux && \
+    microdnf clean all && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install
 
 # Determine architecture and download the appropriate binaries
 RUN ARCH=$(uname -m) && \

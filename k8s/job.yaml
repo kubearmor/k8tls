@@ -14,9 +14,9 @@ kind: ClusterRole
 metadata:
   name: k8tls-cr
 rules:
-- apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get", "list"]
+  - apiGroups: [ "" ]
+    resources: [ "services" ]
+    verbs: [ "get", "list" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -27,9 +27,9 @@ roleRef:
   kind: ClusterRole
   name: k8tls-cr
 subjects:
-- kind: ServiceAccount
-  name: k8tls-serviceact
-  namespace: k8tls
+  - kind: ServiceAccount
+    name: k8tls-serviceact
+    namespace: k8tls
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -131,6 +131,16 @@ data:
       ]
     }
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-credentials
+  namespace: k8tls
+data:
+  credentials: |
+    <access-key-in-base64-encoded-format>
+    <secret-key-in-base64-encoded-format>
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -141,17 +151,29 @@ spec:
     spec:
       serviceAccountName: k8tls-serviceact
       containers:
-      - name: k8tls
-        image:  kubearmor/k8tls:latest
-        command: ["./k8s_tlsscan"]
-        volumeMounts:
-          - mountPath: /home/k8tls/config/
-            name: config
-            readOnly: true
+        - name: k8tls
+          image: kubearmor/k8tls:latest
+          imagePullPolicy: Always
+          command:
+            - "./main_k8s_tlsscan"
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /home/k8tls/config/
+              name: config
+              readOnly: true
+
+            - mountPath: /home/k8tls/.aws/credentials
+              subPath: credentials
+              name: aws-credentials
+              readOnly: true
       restartPolicy: Never
       volumes:
         - name: config
           configMap:
             name: k8tls-cm
+        - name: aws-credentials
+          secret:
+            secretName: aws-credentials
+            defaultMode: 0400
   backoffLimit: 4
----

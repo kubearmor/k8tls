@@ -60,7 +60,7 @@ csvheader()
 {
 	[[ "$csvout" == "" ]] && return
 	if [ ! -f "$csvout" ]; then
-		echo "Name,Address,Status,Version,Ciphersuite,Hash,Signature,Verification,FIPS_140_3_Compliant" > $csvout
+		echo "Name,Address,Type,Status,Version,Ciphersuite,Hash,Signature,Verification,FIPS_140_3_Compliant" > $csvout
 	fi
 }
 
@@ -87,6 +87,7 @@ jsonendpoint_hdr()
 			"svc": "$SVC_Name",
 			"host": "$SVC_Host",
 			"port": "$SVC_Port",
+			"type": "$SVC_Type",
 			"finding": [
 EOF
 }
@@ -187,7 +188,10 @@ main()
 		SVC_Host=${SVC_Address/:*}
 		SVC_Port=${SVC_Address/*:}
 		SVC_Name=${arr[1]}
-		SVC_Scanners=${arr[2]}
+		SVC_Type=${arr[2]}
+		# Service type is only applicable for Kubernetes
+		[[ "$SVC_Type" == "" ]] && SVC_Type="NA"
+		SVC_Scanners=${arr[3]}
 		[[ "$SVC_Scanners" == "" ]] && SVC_Scanners="tls"
 		scansvc
 		((endpoint_cnt++))
