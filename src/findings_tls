@@ -4,7 +4,7 @@ set -o pipefail
 
 opensslscan()
 {
-	tmp=/tmp/tls.out
+	tmp=/tmp/tls_$$.out
 	rm -f $tmp 2>/dev/null
 	timeout 2s openssl s_client -CApath /etc/ssl/certs/ -connect "$SVC_Address" -brief < /dev/null 2>$tmp
 	conn_estd=0
@@ -15,7 +15,7 @@ opensslscan()
 		key=${line/:*/}
 		val=${line/*: /}
 		key=${key// /_}
-		printf -v "TLS_$key" '%s' "$val"
+		# printf -v "TLS_$key" '%s' "$val"
 		TLS_Status="TLS"
 	done < $tmp
 	fips_compliance_check
@@ -84,6 +84,59 @@ k8tls_tls_01checkversion()
 				}
 EOF
   fi
+}
+
+k8tls_tls_04certExpiryWarning()
+{
+	do_openssl_scan
+	[[ "$TLS_Status" != "TLS" ]] && return
+
+	# default to 30 days if not set
+	DAYS=${CERT_WARN_BEFORE_DAYS}
+
+	# Get the expiry date from the server cert
+	expiry_date=$(openssl s_client -connect "$SVC_Address" -servername "$SVC_Address" < /dev/null 2>/dev/null |
+		openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+
+	# Convert to epoch for comparison
+	expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null)
+	now_epoch=$(date +%s)
+	warn_epoch=$(( now_epoch + DAYS*86400 ))
+
+		# Skip if already expired — assume another function handles it
+	[[ $expiry_epoch -lt $now_epoch ]] && return
+
+	if [[ $expiry_epoch -lt $warn_epoch ]]; then
+		days_left=$(( (expiry_epoch - now_epoch) / 86400 ))
+		days_left=${days_left#-} # handle negative
+		status="FAIL"
+		local description="TLS certificate for $SVC_Address is expiring in $days_left day(s) on $expiry_date."
+		local severity="high"
+		local solution="Renew the TLS certificate before it expires."
+		local remediation="low"
+	else
+		status="OK"
+		local description="TLS certificate for $SVC_Address is valid until $expiry_date."
+		local severity="info"
+		local solution="No action needed. TLS is not expiring any time soon"
+		local remediation="NA"
+
+	fi
+
+		cat << EOF >> $TMPJSONSEC
+			{
+				"plugin": "tls-cert-expiry-warning",
+				"title": "Certificate expiration check",
+				"description": "$description",
+				"compliance": "Best Practice",
+				"control-id": "3.4",
+				"link": "https://www.nccoe.nist.gov/publication/1800-16/VolB/index.html",
+				"severity": "$severity",
+				"remediationEstEffort": "$remediation",
+				"solution": "$solution",
+				"status": "$status"
+			}
+EOF
 }
 
 k8tls_tls_02certificateChecks()

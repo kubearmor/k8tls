@@ -10,11 +10,22 @@ LABEL name="k8tls" \
       description="Tool to scan/verify the TLS connection parameters and the certificates usage on the target server ports. The tool does not inject a proxy/sidecar to do this scanning."
 
 RUN microdnf -y update && \
-    microdnf -y install --nodocs --setopt=install_weak_deps=0 --setopt=keepcache=0 shadow-utils openssl ca-certificates nmap jq tar unzip gzip util-linux && \
+    microdnf -y install --nodocs --setopt=install_weak_deps=0 --setopt=keepcache=0 shadow-utils make wget perl bzip2 openssl ca-certificates nmap jq tar unzip gzip util-linux && \
     microdnf clean all && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install
+
+# Download and install GNU Parallel from source
+RUN wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2 \
+    && tar -xjf parallel-latest.tar.bz2 \
+    &&cd $(ls -d parallel-*/ | head -n 1) \
+    && ./configure && make && make install \
+    && cd .. \
+    && rm -rf parallel-* parallel-latest.tar.bz2
+
+# Source env_parallel.bash in Docker container
+RUN echo '. /usr/local/bin/env_parallel.bash' >> /etc/profile.d/env_parallel.sh
 
 # Determine architecture and download the appropriate binaries
 RUN ARCH=$(uname -m) && \

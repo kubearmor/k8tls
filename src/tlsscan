@@ -100,13 +100,14 @@ jsonendpoint_ftr()
 EOF
 }
 
-TMPJSONSEC=/tmp/k8tls_json_section.json
+TMPJSONSEC=/tmp/k8tls_json_section_$$.json
+
 . $BDIR/findings_tls
 . $BDIR/findings_terrapin
 scansvc()
 {
 	jsonendpoint_hdr
-	TMPFNLIST=/tmp/k8tls_fnlist.txt
+	TMPFNLIST=/tmp/k8tls_fnlist_$$.txt
 	declare -F | grep "k8tls_" | sort | awk '{print $3}' > $TMPFNLIST
 	cnt=0
 	while read fn; do
