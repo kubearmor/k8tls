@@ -15,7 +15,7 @@ metadata:
   name: k8tls-cr
 rules:
   - apiGroups: [ "" ]
-    resources: [ "services" ]
+    resources: [ "services", "namespaces" ]
     verbs: [ "get", "list" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -131,15 +131,15 @@ data:
       ]
     }
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: aws-credentials
-  namespace: k8tls
-data:
-  credentials: |
-    <access-key-in-base64-encoded-format>
-    <secret-key-in-base64-encoded-format>
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: aws-credentials
+#   namespace: k8tls
+# data:
+#   credentials: |
+#     <access-key-in-base64-encoded-format>
+#     <secret-key-in-base64-encoded-format>
 ---
 apiVersion: batch/v1
 kind: Job
@@ -158,22 +158,30 @@ spec:
             - "./main_k8s_tlsscan"
           securityContext:
             runAsUser: 0
+          env:
+            - name: NAMESPACE
+              value: "-A"
+            - name: CHUNK_SIZE
+              value: "2"
+            - name: MAX_PARALLEL_JOBS
+              value: "4"
+            - name: CERT_WARN_BEFORE_DAYS
+              value: "2"
           volumeMounts:
             - mountPath: /home/k8tls/config/
               name: config
               readOnly: true
-
-            - mountPath: /home/k8tls/.aws/credentials
-              subPath: credentials
-              name: aws-credentials
-              readOnly: true
+            # - mountPath: /home/k8tls/.aws/credentials
+            #   subPath: credentials
+            #   name: aws-credentials
+            #   readOnly: true
       restartPolicy: Never
       volumes:
         - name: config
           configMap:
             name: k8tls-cm
-        - name: aws-credentials
-          secret:
-            secretName: aws-credentials
-            defaultMode: 0400
+        # - name: aws-credentials
+        #   secret:
+        #     secretName: aws-credentials
+        #     defaultMode: 0400
   backoffLimit: 4

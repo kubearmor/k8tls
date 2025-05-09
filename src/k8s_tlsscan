@@ -17,30 +17,110 @@ wordpress-mysql   mysql                                           10.100.212.210
 wordpress-mysql   wordpress                                       10.100.189.9     <none>                     80          TCP        80
 SAMPLE_OUT
 
-BDIR=`dirname $0`
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -n, --namespace <namespace>     Specify a Kubernetes namespace (default: -A for all namespaces)"
+    echo "  -c, --chunk-size <size>         Set the number of lines per chunk (default: 1)"
+    echo "  -p, --max-parallel <number>     Set the number of parallel jobs (default: 3)"
+    echo "  -h, --help                      Show this help message and exit"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --namespace default --chunk-size 5 --max-parallel 2"
+    echo "  $0 -n kube-system -c 10 -p 4"
+    echo ""
+    exit 0
+}
+BDIR=$(dirname "$0")
 ADDRLIST="addr.list"
-rm -f $ADDRLIST
-while read -r line; do
-	IFS=' ' list=($(echo $line)) 
-	ns=${list[0]}
-	svc=${list[1]}
-	svcType=${list[2]}
-	clusterip=${list[3]}
-	! [[ $clusterip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && continue
-	IFS=',' pnames=($(echo "${list[4]}"))
-	IFS=',' ports=($(echo "${list[5]}"))
-	IFS=',' prots=($(echo "${list[6]}"))
-	for ((i=0;i<5;i++)); do
-		pname="${pnames[$i]}"
-		tport="${ports[$i]}"
-		prot="${prots[$i]}"
-		[[ "$tport" == ""  || "$prot" == "" ]] && break
-		[[ "$prot" != "TCP" ]] && echo "unsupported protocol $prot" && continue
-		[[ "$pname" == "<none>" ]] && pname=""
-		[[ "$pname" != "" ]] && pname="[$pname]"
-		echo "$clusterip:$tport $ns/$svc$pname $svcType" >> $ADDRLIST
-	done
-	IFS=' '
-done < <(kubectl get svc --no-headers -A -o=custom-columns='NS:.metadata.namespace,NAME:.metadata.name,TYPE:.spec.type,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort')
+rm -f "$ADDRLIST"
+export SHELL=$(type -p bash)
 
-$BDIR/tlsscan --infile $ADDRLIST --compact-json
+OPTS=$(getopt -o n:c:p:h --long namespace:,chunk-size:,max-parallel:,help -n 'parse-options' -- "$@")
+[[ $? -ne 0 ]] && usage
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -n | --namespace ) namespace="$2"; shift 2;;
+        -c | --chunk-size ) chunk_size="$2"; shift 2;;
+        -p | --max-parallel ) max_parallel="$2"; shift 2;;
+        -h | --help ) usage; exit 0;;
+        -- ) shift; break ;;
+        * ) break ;;
+    esac
+done
+
+[[ -z "$namespace" ]] && namespace="-A"  # Default to all namespaces
+[[ -z "$chunk_size" ]] && chunk_size=1
+[[ -z "$max_parallel" ]] && max_parallel=3
+
+if [[ "$namespace" == "-A" ]]; then
+    kubectl_cmd="kubectl get svc --no-headers -A -o=custom-columns='NS:.metadata.namespace,NAME:.metadata.name,TYPE:.spec.type,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort'"
+else
+    kubectl_cmd="kubectl get svc --no-headers -n $namespace -o=custom-columns='NAME:.metadata.name,TYPE:.spec.type,ClusterIP:.spec.clusterIP,PORTNAME:.spec.ports[*].name,PORT:.spec.ports[*].port,PROTOCOL:.spec.ports[*].protocol,TGTPORT:.spec.ports[*].targetPort'"
+fi
+
+# Process service data
+while read -r line; do
+    IFS=' ' read -r -a list <<< "$line"
+
+    # we are doing this condition because if we scan a particular namespace, the namespace column does not show up in the list    
+    if [[ "$namespace" == "-A" ]]; then
+        ns=${list[0]}
+        svc=${list[1]}
+        svcType=${list[2]}
+        clusterip=${list[3]}
+        pnames="${list[4]}"
+        ports="${list[5]}"
+        prots="${list[6]}"
+    else
+        ns="$namespace"
+        svc=${list[0]}
+        svcType=${list[1]}
+        clusterip=${list[2]}
+        pnames="${list[3]}"
+        ports="${list[4]}"
+        prots="${list[5]}"
+    fi
+
+    ! [[ $clusterip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && continue
+    IFS=',' read -r -a pnames <<< "$pnames"
+    IFS=',' read -r -a ports <<< "$ports"
+    IFS=',' read -r -a prots <<< "$prots"
+
+    for ((i=0; i<5; i++)); do
+        pname="${pnames[$i]}"
+        tport="${ports[$i]}"
+        prot="${prots[$i]}"
+        [[ -z "$tport" || -z "$prot" ]] && break
+        [[ "$prot" != "TCP" ]] && echo "unsupported protocol $prot" && continue
+        [[ "$pname" == "<none>" ]] && pname=""
+        [[ -n "$pname" ]] && pname="[$pname]"
+        echo "$clusterip:$tport $ns/$svc$pname $svcType" >> "$ADDRLIST"
+    done
+    IFS=' '
+done < <(eval "$kubectl_cmd")
+rm -f chunk_*
+# Split addr.list into unique chunks
+mkdir -p "$BDIR/chunks"
+awk '{print > "'$BDIR'/chunks/chunk_"(NR%'$chunk_size')}' $ADDRLIST
+# Run tlsscan in parallel on each chunk and save different JSON files
+process_chunk() {
+    local chunk_file=$1
+    local json_file="${chunk_file}.json"
+    echo "[PID $$] Processing $chunk_file -> $json_file"  # Debug log with PID
+    "$BDIR/tlsscan" --infile "$chunk_file" --json "$json_file"
+}
+
+# Export the function to env_parallel directly (no `export -f` needed)
+. env_parallel.bash
+
+# Use env_parallel to call the function with max parallel jobs
+env_parallel --env BDIR --env process_chunk -j "$max_parallel" process_chunk ::: $(ls $BDIR/chunks/chunk_* | sort)
+# Combine JSON outputs based on the "endpoints" array
+jq -s '{app: {version: "v0.1"}, endpoints: (map(.endpoints) | add)}' $BDIR/chunks/chunk_*.json > /tmp/report.json
+ rm -rf $BDIR/chunks
+
+echo "Combined report saved in /tmp/report.json"
