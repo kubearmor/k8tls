@@ -1,6 +1,7 @@
 FROM redhat/ubi9-minimal
 
 ARG VERSION=latest
+ARG TARGETARCH
 
 LABEL name="k8tls" \
       vendor="Accuknox" \
@@ -12,9 +13,14 @@ LABEL name="k8tls" \
 RUN microdnf -y update && \
     microdnf -y install --nodocs --setopt=install_weak_deps=0 --setopt=keepcache=0 shadow-utils make wget perl bzip2 openssl ca-certificates nmap jq tar unzip gzip util-linux && \
     microdnf clean all && \
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    if [ "$TARGETARCH" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
+    else \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
+    fi && \
     unzip awscliv2.zip && \
-    ./aws/install
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
 
 # Download and install GNU Parallel from source
 RUN wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2 \
@@ -28,15 +34,23 @@ RUN wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2 \
 RUN echo '. /usr/local/bin/env_parallel.bash' >> /etc/profile.d/env_parallel.sh
 
 # Determine architecture and download the appropriate binaries
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
         curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl --output-dir /usr/local/bin/ && \
         curl -L https://github.com/RUB-NDS/Terrapin-Scanner/releases/download/v1.1.0/Terrapin_Scanner_Linux_amd64 -o /usr/local/bin/Terrapin_Scanner; \
-    elif [ "$ARCH" = "aarch64" ]; then \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
         curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/arm64/kubectl --output-dir /usr/local/bin/ && \
         curl -L https://github.com/RUB-NDS/Terrapin-Scanner/releases/download/v1.1.3/Terrapin_Scanner_Linux_aarch64 -o /usr/local/bin/Terrapin_Scanner; \
     else \
-        echo "Unsupported architecture: $ARCH"; exit 1; \
+        ARCH=$(uname -m) && \
+        if [ "$ARCH" = "x86_64" ]; then \
+            curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl --output-dir /usr/local/bin/ && \
+            curl -L https://github.com/RUB-NDS/Terrapin-Scanner/releases/download/v1.1.0/Terrapin_Scanner_Linux_amd64 -o /usr/local/bin/Terrapin_Scanner; \
+        elif [ "$ARCH" = "aarch64" ]; then \
+            curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/arm64/kubectl --output-dir /usr/local/bin/ && \
+            curl -L https://github.com/RUB-NDS/Terrapin-Scanner/releases/download/v1.1.3/Terrapin_Scanner_Linux_aarch64 -o /usr/local/bin/Terrapin_Scanner; \
+        else \
+            echo "Unsupported architecture: $ARCH"; exit 1; \
+        fi \
     fi && \
     chmod +x /usr/local/bin/kubectl /usr/local/bin/Terrapin_Scanner
 

@@ -36,6 +36,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: kubearmor/k8tls:${{env.RELEASE_TAG }}
     
