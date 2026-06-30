@@ -1,4 +1,4 @@
-FROM redhat/ubi9-minimal
+FROM redhat/ubi9-minimal:1782708608
 
 ARG VERSION=latest
 
